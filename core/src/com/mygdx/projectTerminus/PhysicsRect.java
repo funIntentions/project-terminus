@@ -25,6 +25,7 @@ public class PhysicsRect
     float linearAccel;
     float angularAccel;
     private Array<PhysicsRect> childRects;
+    private Boolean forceActing;
 
     public PhysicsRect(float x, float y, float width, float height, Color colour, float mass, float rotation)
     {
@@ -38,12 +39,12 @@ public class PhysicsRect
         this.rotation = rotation;
         childRects = new Array<PhysicsRect>();
         COM = new Vector2();
-        force = 28000;
+        force = 0;
         radial = new Vector2();
         linearAccel = 0;
         momentOfInertia = 0;
         forcePosition = new Vector2();
-        angularAccelerationOff();
+        forceActing = false;
     }
 
     public void reset(float x, float y, float width, float height, Color colour, float mass, float rotation)
@@ -58,12 +59,11 @@ public class PhysicsRect
         this.colour = colour;
         this.mass = mass;
         this.rotation = rotation;
-        force = 28000;
+        force = 0;
         radial = new Vector2();
         linearAccel = 0;
         momentOfInertia = 0;
         forcePosition = Vector2.Zero ;
-        angularAccelerationOff();
     }
 
     public void addChild(PhysicsRect rect)
@@ -71,16 +71,46 @@ public class PhysicsRect
         childRects.add(rect);
     }
 
-    public void angularAccelerationOff()
+
+    public void centralForceOn(Boolean forward)
     {
+        forceActing = true;
         forcePosition.x = position.x - width/2;
         forcePosition.y = 0;
+        forcePosition.sub(COM);
+        forcePosition.rotate(rotation);
+        forcePosition.add(COM);
+        force = forward ? 10000 : -10000;
     }
 
-    public void angularAccelerationOn()
+    public void rightForceOn()
     {
-        forcePosition.x = position.x - width/2;
+        forceActing = true;
+        forcePosition.x = position.x + width/2;
+        forcePosition.y = position.y + height/2;
+        forcePosition.sub(COM);
+        forcePosition.rotate(rotation);
+        forcePosition.add(COM);
+        force = 5000;
+    }
+
+    public void forceOff() {
+        forceActing = false;
+        force = 0;
+    }
+
+    public Boolean isForceOn()
+    {
+        return forceActing;
+    }
+
+    public void leftForceOn()
+    {
+        forceActing = true;
+        forcePosition.x = position.x + width/2;
         forcePosition.y = position.y - height/2;
+        forcePosition.rotate(rotation);
+        force = 5000;
     }
 
     private float determineMomentOfIntertia(Vector2 centerOfMass)
@@ -126,7 +156,6 @@ public class PhysicsRect
         return angularAccel;
     }
 
-
     public void update(float time)
     {
         System.out.println("Delta time: " + time);
@@ -155,6 +184,7 @@ public class PhysicsRect
         //Determine Velocity
         linearAccel = linearAcceleration;
         velocity.x += linearAcceleration * time;
+        //velocity.y += linearAcceleration * time;
 
         float momentOfInertia = determineMomentOfIntertia(COM);
         this.momentOfInertia = momentOfInertia;
@@ -168,6 +198,7 @@ public class PhysicsRect
 
         // update position
         COM.x += velocity.x * time;
+        COM.y += velocity.x * time;
 
         System.out.println("AngularVel: " + angularVelocity);
 
@@ -175,6 +206,7 @@ public class PhysicsRect
         rotation += rotationThisFrame;
 
         position.x += velocity.x * time;
+        position.y += velocity.y * time;
         position.sub(COM);
         position.rotate(rotationThisFrame);
         position.add(COM);
@@ -182,6 +214,7 @@ public class PhysicsRect
         for (PhysicsRect rect : childRects)
         {
             rect.position.x += velocity.x * time;
+            rect.position.y += velocity.y * time;
             rect.rotation = rotation;
             rect.position.sub(COM);
             rect.position.rotate(rotationThisFrame);
@@ -189,6 +222,7 @@ public class PhysicsRect
         }
 
         forcePosition.x  += velocity.x * time;
+        forcePosition.y  += velocity.x * time;
         forcePosition.sub(COM);
         forcePosition.rotate(rotationThisFrame);
         forcePosition.add(COM);

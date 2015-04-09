@@ -59,7 +59,7 @@ public class ProjectTerminus implements Screen
         Gdx.gl.glClearColor( 0.2f,  0.2f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        if (running)
+        /*if (running)
         {
             if (accelerating && (time + deltaTime > 2.0000f))
             {
@@ -81,7 +81,9 @@ public class ProjectTerminus implements Screen
                 car.update(deltaTime);
                 time += deltaTime;
             }
-        }
+        }*/
+
+        car.update(deltaTime);
 
         arrowPosition = car.forcePosition;
 
@@ -122,9 +124,13 @@ public class ProjectTerminus implements Screen
         shapeRenderer.setColor(COMcolour);
         shapeRenderer.circle(car.COM.x, car.COM.y, 4);
 
-        shapeRenderer.setColor(arrowColour);
-        shapeRenderer.rectLine(arrowPosition.x, arrowPosition.y, arrowPosition.x + 40, arrowPosition.y, 6);
-        shapeRenderer.triangle(arrowPosition.x + 40, arrowPosition.y - 10,arrowPosition.x + 40, arrowPosition.y + 10, arrowPosition.x + 50, arrowPosition.y);
+        if (car.isForceOn())
+        {
+            shapeRenderer.setColor(arrowColour);
+            shapeRenderer.rectLine(arrowPosition.x, arrowPosition.y, arrowPosition.x + 40, arrowPosition.y, 6);
+            shapeRenderer.triangle(arrowPosition.x + 40, arrowPosition.y - 10,arrowPosition.x + 40, arrowPosition.y + 10, arrowPosition.x + 50, arrowPosition.y);
+        }
+
         shapeRenderer.end();
 
 
@@ -186,14 +192,34 @@ public class ProjectTerminus implements Screen
             driver.mass -= 10;
         }
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.UP))
+        if (!Gdx.input.isKeyPressed(Input.Keys.UP) &&
+                !Gdx.input.isKeyPressed(Input.Keys.DOWN) &&
+                !Gdx.input.isKeyPressed(Input.Keys.RIGHT) &&
+                !Gdx.input.isKeyPressed(Input.Keys.LEFT))
         {
-            car.angularAccelerationOn();
+            car.forceOff();
         }
-
-        if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN))
+        else
         {
-            car.angularAccelerationOff();
+            if (Gdx.input.isKeyPressed(Input.Keys.UP))
+            {
+                car.centralForceOn(true);
+            }
+
+            if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
+            {
+                car.centralForceOn(false);
+            }
+
+            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+            {
+                car.rightForceOn();
+            }
+
+            if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
+            {
+                car.leftForceOn();
+            }
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.BACKSPACE))

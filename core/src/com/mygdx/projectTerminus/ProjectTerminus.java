@@ -59,30 +59,6 @@ public class ProjectTerminus implements Screen
         Gdx.gl.glClearColor( 0.2f,  0.2f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        /*if (running)
-        {
-            if (accelerating && (time + deltaTime > 2.0000f))
-            {
-                float difference = (time + deltaTime) - 2.0000f;
-                car.update(deltaTime - difference);
-                time += (deltaTime - difference);
-                car.force = 0;
-                accelerating = false;
-            }
-            else if (time + deltaTime >= 8.0000f)
-            {
-                float difference = (time + deltaTime) - 8.0000f;
-                car.update(deltaTime - difference);
-                time += (deltaTime - difference);
-                running = false;
-            }
-            else
-            {
-                car.update(deltaTime);
-                time += deltaTime;
-            }
-        }*/
-
         car.update(deltaTime);
 
         arrowPosition = car.forcePosition;

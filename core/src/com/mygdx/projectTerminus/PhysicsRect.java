@@ -14,6 +14,7 @@ public class PhysicsRect
     Vector2 radial;
     Vector2 forcePosition;
     Vector2 velocity;
+    Vector2 velocityTotal;
     float momentOfInertia;
     float angularVelocity;
     float mass;
@@ -21,7 +22,7 @@ public class PhysicsRect
     float height;
     float rotation;
     Color colour;
-    float force;
+    Vector2 force;
     float linearAccel;
     float angularAccel;
     private Array<PhysicsRect> childRects;
@@ -31,6 +32,7 @@ public class PhysicsRect
     {
         position = new Vector2(x,y);
         velocity = new Vector2(0,0);
+        velocityTotal =  new Vector2(0,0);
         angularVelocity = 0.0f;
         this.width = width;
         this.height = height;
@@ -39,7 +41,7 @@ public class PhysicsRect
         this.rotation = rotation;
         childRects = new Array<PhysicsRect>();
         COM = new Vector2();
-        force = 0;
+        force = new Vector2();
         radial = new Vector2();
         linearAccel = 0;
         momentOfInertia = 0;
@@ -59,11 +61,12 @@ public class PhysicsRect
         this.colour = colour;
         this.mass = mass;
         this.rotation = rotation;
-        force = 0;
+        force = new Vector2();
         radial = new Vector2();
         linearAccel = 0;
         momentOfInertia = 0;
         forcePosition = Vector2.Zero ;
+        velocityTotal = new Vector2(0,0);
     }
 
     public void addChild(PhysicsRect rect)
@@ -76,11 +79,12 @@ public class PhysicsRect
     {
         forceActing = true;
         forcePosition.x = position.x - width/2;
-        forcePosition.y = 0;
-        forcePosition.sub(COM);
+        forcePosition.y = position.y;
+        forcePosition.sub(position);
         forcePosition.rotate(rotation);
-        forcePosition.add(COM);
-        force = forward ? 10000 : -10000;
+        forcePosition.add(position);
+        force.x = forward ? 10000 : -10000;
+        force.y = 0;
     }
 
     public void rightForceOn()
@@ -88,15 +92,17 @@ public class PhysicsRect
         forceActing = true;
         forcePosition.x = position.x + width/2;
         forcePosition.y = position.y + height/2;
-        forcePosition.sub(COM);
+        forcePosition.sub(position);
         forcePosition.rotate(rotation);
-        forcePosition.add(COM);
-        force = 5000;
+        forcePosition.add(position);
+        force.x = 5000;
+        force.y = 0;
     }
 
     public void forceOff() {
         forceActing = false;
-        force = 0;
+        force.x = 0;
+        force.y = 0;
     }
 
     public Boolean isForceOn()
@@ -109,11 +115,14 @@ public class PhysicsRect
         forceActing = true;
         forcePosition.x = position.x + width/2;
         forcePosition.y = position.y - height/2;
+        forcePosition.sub(position);
         forcePosition.rotate(rotation);
-        force = 5000;
+        forcePosition.add(position);
+        force.x = 5000;
+        force.y = 0;
     }
 
-    private float determineMomentOfIntertia(Vector2 centerOfMass)
+    private float determineMomentOfIntertia()
     {
         float momentOfInertia = 0;
         float Icm = (float)((mass * ((float)Math.pow(width, 2) + (float)Math.pow(height, 2))) / 12.0);
@@ -135,30 +144,21 @@ public class PhysicsRect
         return momentOfInertia;
     }
 
-    private float determineLinearAcceleration(float force, float totalMass)
-    {
-        return force/totalMass;
-    }
-
     private float determineAngularAcceleration(float I)
     {
         Vector2 r = radial;
-        Vector2 f = new Vector2(force, 0);
+        Vector2 f = new Vector2(force);
+        f.rotate(rotation);
         float t = r.crs(f);
-
-        System.out.println("torque: " + t);
 
         float angularAccel = 0.0f;
         angularAccel = t / I;
-
-        System.out.println("angular accel: " + angularAccel);
 
         return angularAccel;
     }
 
     public void update(float time)
     {
-        System.out.println("Delta time: " + time);
         float totalMass = mass;
         COM.x = position.x * mass;
         COM.y = position.y * mass;
@@ -179,16 +179,18 @@ public class PhysicsRect
         radial.x = forcePosition.x - COM.x;
         radial.y = forcePosition.y - COM.y;
 
-        float linearAcceleration = determineLinearAcceleration(force, totalMass);
+        Vector2 acceleration = new Vector2(force.x/totalMass, force.y/totalMass);
 
         //Determine Velocity
-        linearAccel = linearAcceleration;
-        velocity.x += linearAcceleration * time;
-        //velocity.y += linearAcceleration * time;
+        linearAccel = acceleration.x;
+        velocityTotal.x += acceleration.x * time;
+        velocityTotal.y += acceleration.y * time;
+        velocity.x = velocityTotal.x;
+        velocity.y = velocityTotal.y;
+        velocity.rotate(rotation);
 
-        float momentOfInertia = determineMomentOfIntertia(COM);
+        float momentOfInertia = determineMomentOfIntertia();
         this.momentOfInertia = momentOfInertia;
-        System.out.println("I: " + momentOfInertia);
 
         float angularAcceleration = determineAngularAcceleration(momentOfInertia);
 
@@ -196,14 +198,13 @@ public class PhysicsRect
         angularVelocity += angularAcceleration * time;
         angularAccel = angularAcceleration;
 
-        // update position
-        COM.x += velocity.x * time;
-        COM.y += velocity.x * time;
-
-        System.out.println("AngularVel: " + angularVelocity);
-
         float rotationThisFrame =  angularVelocity  * time * (float)(180/Math.PI);
         rotation += rotationThisFrame;
+        velocity.rotate(rotationThisFrame);
+
+        // update position
+        COM.x += velocity.x * time;
+        COM.y += velocity.y * time;
 
         position.x += velocity.x * time;
         position.y += velocity.y * time;

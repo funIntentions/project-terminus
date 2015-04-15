@@ -11,24 +11,17 @@ import com.badlogic.gdx.math.Vector2;
  *
  * @author Shane
  */
-public class PhysicsBox {
+public class PhysicsBox extends RigidObject {
     
     // Collision information
-    public final double circleRadius;
-    public Vector2[] vertices;
+    private final double circleRadius;
     
     // Whether the box is elastic
     public final boolean isElastic;
     
-    // Transform properties (note that the position is in the centre of the box)
-    public Vector2 position;
-    public float rotation;
-    public float mass;
-    
-    // Current velocity (linear and rotational) of the box
-    public Vector2 velocity;
-    public double omega;
-    
+    // The length of one side of the box
+    public float sideLen;
+        
     /**
      * Creates a new PhysicsBox for collision with the awesome car.
      * @param initMass     The mass of the box.
@@ -41,17 +34,14 @@ public class PhysicsBox {
      */
     public PhysicsBox(float sideLength,
                         Vector2 initPosition, float initRotation, float initMass,
-                        Vector2 initVel, double initOmega, boolean elastic)
+                        Vector2 initVel, float initOmega, boolean elastic)
     {
+        super(initMass, initPosition, initRotation, initVel, initOmega);
+        
         circleRadius = Math.sqrt(((sideLength / 2) * (sideLength / 2)) +
                         ((sideLength / 2) * (sideLength / 2)));
         isElastic = elastic;
-        position = initPosition;
-        rotation = initRotation;
-        mass = initMass;
-        
-        velocity = initVel;
-        omega = initOmega;
+        sideLen = sideLength; 
         
         //  The box's vertices are arranged as below.
         //
@@ -72,10 +62,13 @@ public class PhysicsBox {
     
     public void update(float deltaTime)
     {
-        rotation += omega * deltaTime;
+        rotation += angularVelocity * deltaTime;
         position.x += velocity.x * deltaTime;
         position.y += velocity.y * deltaTime;
+        
+        updateVertices();
     }
+
     /**
      * Updates the box's vertex positions.
      */
@@ -89,6 +82,16 @@ public class PhysicsBox {
             vertex.rotate(rotation);
             vertex.add(position);
         }
+    }
+    
+    public Vector2[] getVertices()
+    {
+        return vertices;
+    }
+    
+    public double getBoundingCircleRadius()
+    {
+        return circleRadius;
     }
     
 }

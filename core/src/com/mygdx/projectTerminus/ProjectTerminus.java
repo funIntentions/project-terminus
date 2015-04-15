@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import java.util.ArrayList;
 
 /**
  * Created by Dan on 4/5/2015.
@@ -52,8 +53,37 @@ public class ProjectTerminus implements Screen
 
         car.addChild(driver);
         car.addChild(tank);
+        
+        /*float sideLength,
+                        Vector2 initPosition, float initRotation, float initMass,
+                        Vector2 initVel, double initOmega, boolean elasti*/
+        
+        elasticBox = new PhysicsBox(100.f, new Vector2(170, 170), 0, 500.f,
+                                    new Vector2(), 0.f, true);
     }
 
+    private void handleCollisions()
+    {
+        
+    }
+    
+    // Does broadphase collision detection and returns an arraylist containing
+    // pairs of possible collisions
+    private ArrayList<Pair<RigidObject, RigidObject>> doBroadphase()    
+    {
+        return null;
+    }
+    
+    /**
+     * Checks more thoroughly whether the given pairs collided.
+     * @param bodies The bodies that may be colliding (as identified during
+     * broadphase).
+     */
+    private void doNarrowPhase(ArrayList<Pair<RigidObject, RigidObject>> bodies)
+    {
+        
+    }
+    
     @Override
     public void render(float deltaTime)
     {
@@ -100,6 +130,15 @@ public class ProjectTerminus implements Screen
 
         shapeRenderer.setColor(COMcolour);
         shapeRenderer.circle(car.COM.x, car.COM.y, 4);
+        
+        // Draw the elastic box
+        shapeRenderer.setColor(new Color(255.f, 0, 128.f, 1.f));
+        shapeRenderer.translate(elasticBox.position.x, elasticBox.position.y, 0.f);
+        shapeRenderer.rotate(0, 0, 1, elasticBox.rotation);
+        shapeRenderer.rect(-elasticBox.sideLen / 2, -elasticBox.sideLen / 2,
+                            elasticBox.sideLen, elasticBox.sideLen);
+        shapeRenderer.rotate(0, 0, 1, -elasticBox.rotation);
+        shapeRenderer.translate(-elasticBox.position.x, -elasticBox.position.y, 0.f);
 
         // Draw the force arrow if a force is currently being applied
         if (car.isForceOn())

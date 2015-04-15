@@ -11,7 +11,7 @@ import com.badlogic.gdx.math.Vector2;
  *
  * @author Shane
  */
-public class PhysicsBox extends RigidObject {
+public class PhysicsBox extends RigidBody {
     
     // Collision information
     private final double circleRadius;

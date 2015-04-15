@@ -11,7 +11,7 @@ import com.badlogic.gdx.math.Vector2;
  *
  * @author Shane
  */
-public abstract class RigidObject {
+public abstract class RigidBody {
     public float mass;
     public Vector2 position;
     public float rotation;
@@ -19,7 +19,7 @@ public abstract class RigidObject {
     public float angularVelocity;
     public Vector2 vertices[];
     
-    public RigidObject(float initMass, Vector2 initPosition, float initRotation,
+    public RigidBody(float initMass, Vector2 initPosition, float initRotation,
                        Vector2 initVel, float initAngleVel)
     {
         mass = initMass;

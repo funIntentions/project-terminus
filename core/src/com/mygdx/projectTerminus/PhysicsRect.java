@@ -7,7 +7,7 @@ import com.badlogic.gdx.utils.Array;
 /**
  * Created by Dan on 4/5/2015.
  */
-public class PhysicsRect extends RigidObject
+public class PhysicsRect extends RigidBody
 {
     // Possible combinations of forces
     public static final int NO_FORCE = 0;
@@ -34,6 +34,7 @@ public class PhysicsRect extends RigidObject
     public float dragCoefficient = 200;
     private Array<PhysicsRect> childRects;
     private int currentForces;
+    private double circleRadius;
 
     public PhysicsRect(float x, float y, float width, float height, Color colour, float mass, float rotation)
     {
@@ -50,6 +51,8 @@ public class PhysicsRect extends RigidObject
         linearAccel = 0;
         momentOfInertia = 0;
         forcePosition = new Vector2();
+                
+        circleRadius = Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height / 2, 2));
     }
 
     public void reset(float x, float y, float width, float height, Color colour, float mass, float rotation)
@@ -164,7 +167,7 @@ public class PhysicsRect extends RigidObject
     @Override
     public double getBoundingCircleRadius()
     {
-        return 0.0;
+        return circleRadius;
     }
     
     @Override
@@ -183,55 +186,62 @@ public class PhysicsRect extends RigidObject
     @Override
     public void update(float time)
     {
-        Vector2 force = new Vector2(1, 0);   // The unit vector in the x direction will be rotated
-        Vector2 forcePos = new Vector2(0,0); // Force is applied here
-        float forceMagnitude = 0;
+        forcePosition.x = 0;
+        forcePosition.y = 0;
         int numForces = 0;
-        
+        force.y = 0;
+        force.x = 0;
+
         // Determine which forces are active and average their positions and
         // magnitudes
         if ((currentForces & TURNING_RIGHT_FORCE) != 0)
         {
-            forcePos.add(new Vector2(width / 2, height / 2));
-            forceMagnitude += LEFT_RIGHT_FORCE_MAG;
             numForces++;
+
+            forcePosition.x += position.x + width/2;
+            forcePosition.y += position.y + height/2;
+            force.x += LEFT_RIGHT_FORCE_MAG;
         }
-        
+
         if ((currentForces & TURNING_LEFT_FORCE) != 0)
         {
-            forcePos.add(new Vector2(width / 2, -height / 2));
-            forceMagnitude += LEFT_RIGHT_FORCE_MAG;
             numForces++;
+
+            forcePosition.x += position.x + width/2;
+            forcePosition.y += position.y - height/2;
+            force.x += LEFT_RIGHT_FORCE_MAG;
         }
-        
+
         if ((currentForces & FORWARD_FORCE) != 0)
         {
-            forcePos.add(new Vector2(-width / 2, 0));
-            forceMagnitude += BACK_FORWARD_FORCE_MAG;
             numForces++;
+
+            forcePosition.x += position.x - width/2;
+            forcePosition.y += position.y;
+            force.x += BACK_FORWARD_FORCE_MAG;
         }
-        
+
         if((currentForces & BACKWARD_FORCE) != 0)
         {
-            forcePos.add(new Vector2(-width / 2, 0));
-            forceMagnitude -= BACK_FORWARD_FORCE_MAG;
             numForces++;
+
+            forcePosition.x += position.x - width/2;
+            forcePosition.y += position.y;
+            force.x -= BACK_FORWARD_FORCE_MAG;
         }
-        
+
+        // Average the forces
         numForces = numForces == 0 ? 1 : numForces; // Make this 1 to avoid dividing by 0
-        // Average forces
-        forceMagnitude /= numForces;
-        forcePos.x /= numForces;
-        forcePos.y /= numForces;
-        forcePos.rotate(rotation);
-        forcePos.add(position);
-        forcePosition = forcePos;
-        
-        // Point force in the correct direction and give it the right magnitude
+        forcePosition.x /= numForces;
+        forcePosition.y /= numForces;
+
+        forcePosition.sub(position);
+        forcePosition.rotate(rotation);
+        forcePosition.add(position);
         force.rotate(rotation);
-        force.x *= forceMagnitude;
-        force.y *= forceMagnitude;
-        
+
+
+        // Calculate COM
         float totalMass = mass;
         COM.x = position.x * mass;
         COM.y = position.y * mass;
@@ -247,57 +257,57 @@ public class PhysicsRect extends RigidObject
             COM.x /= totalMass;
             COM.y /= totalMass;
         }
-        
-        // update vel, accel, and position
-        radial.x = forcePos.x - COM.x;
-        radial.y = forcePos.y - COM.y;
-        
-        // Calculate displacement
-        Vector2 displacement = new Vector2(velocity.x * time, velocity.y * time);
-        
-        // Calculate new linear velocity
-        final Vector2 constVo = new Vector2(velocity.x * dragCoefficient, velocity.y * dragCoefficient); // Cvo
-        final float eExponent = (-dragCoefficient * time) / totalMass; // -Ct/m
-        final Vector2 tMinusCvo = new Vector2(force).sub(constVo); // T - Cvo
-        final Vector2 secondTerm = new Vector2(tMinusCvo.x * (float)Math.pow(Math.E, eExponent),
-                                               tMinusCvo.y * (float)Math.pow(Math.E, eExponent)); // e^(-Ct/m)(T - Cvo)
-        final Vector2 newVel = new Vector2(force).sub(secondTerm);
-        newVel.x *= 1 / dragCoefficient;
-        newVel.y *= 1 / dragCoefficient;
-        velocity = newVel;
-        
-        // Update linear position
-        COM.add(displacement);
-        position.add(displacement);
 
-//        Vector2 acceleration = new Vector2(force.x/totalMass, force.y/totalMass);
-      
-//        // Determine the new angular velocity
-//        float curMomentOfInertia = determineMomentOfIntertia();
-//        float angularAcceleration =  new Vector2(radial).crs(force) / curMomentOfInertia;
-//        
-//        // Set the moment of inertia, angular accel and velocity
-//        this.momentOfInertia = curMomentOfInertia;
-//        this.angularAccel = angularAcceleration;
-//        this.angularVelocity += angularAcceleration * time;
-//        
-//        // Determine the change in angle 
-//        float deltaTheta = this.angularVelocity * time;
-//        this.rotation += deltaTheta;
-//        
-//        // Rotate the position about the centre of mass
-//        position.sub(COM);
-//        position.rotate(deltaTheta);
-//        position.add(COM);
-//
-//        // Update the child rectangles (the gas tank and passenger/driver)
-//        for (PhysicsRect rect : childRects)
-//        {
-//            rect.position.add(displacement);
-//            rect.rotation = this.rotation;
-//            rect.position.sub(COM);
-//            rect.position.rotate(deltaTheta);
-//            rect.position.add(COM);
-//        }
+        // update vel, accel, and position
+        radial.x = forcePosition.x - COM.x;
+        radial.y = forcePosition.y - COM.y;
+
+        Vector2 acceleration = new Vector2(force.x/totalMass, force.y/totalMass);
+
+        float momentOfInertia = determineMomentOfIntertia();
+        this.momentOfInertia = momentOfInertia;
+
+        float angularAcceleration = determineAngularAcceleration(momentOfInertia);
+
+        // Determine Angular Velocity
+        float angularForce = (angularAcceleration * totalMass);
+        angularVelocity = 1/dragCoefficient * (angularForce - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (angularForce - dragCoefficient * angularVelocity));
+
+        float rotationThisFrame =  angularVelocity  * time * (float)(180/Math.PI);
+        rotation += rotationThisFrame;
+
+        // Determine Velocity
+        linearAccel = acceleration.x;
+        velocity.x += acceleration.x * time;
+        velocity.y += acceleration.y * time;
+
+        // update position
+        COM.x += velocity.x * time;
+        COM.y += velocity.y * time;
+
+        position.x += velocity.x * time;
+        position.y += velocity.y * time;
+        position.sub(COM);
+        position.rotate(rotationThisFrame);
+        position.add(COM);
+
+        for (PhysicsRect rect : childRects)
+        {
+            rect.position.x += velocity.x * time;
+            rect.position.y += velocity.y * time;
+            rect.rotation = rotation;
+            rect.position.sub(COM);
+            rect.position.rotate(rotationThisFrame);
+            rect.position.add(COM);
+        }
+
+        forcePosition.x  += velocity.x * time;
+        forcePosition.y  += velocity.x * time;
+        forcePosition.sub(COM);
+        forcePosition.rotate(rotationThisFrame);
+        forcePosition.add(COM);
+
+        velocity.x = 1/dragCoefficient * (force.x - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (force.x - dragCoefficient * velocity.x));
+        velocity.y = 1/dragCoefficient * (force.y - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (force.y - dragCoefficient * velocity.y));
     }
 }

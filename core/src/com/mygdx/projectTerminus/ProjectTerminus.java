@@ -15,6 +15,11 @@ import java.util.ArrayList;
  */
 public class ProjectTerminus implements Screen
 {
+    // For testing purposes
+    private final Color eBoxUnmolestedColor = new Color(0.f, 0.f, 255.f, 1.f);
+    private final Color eBoxHitColor = new Color(255.f, 0.f, 0.f, 1.f);
+    private Color eBoxCurrentColor = eBoxUnmolestedColor;
+    
     final Game game;
     private OrthographicCamera camera;
     private ShapeRenderer shapeRenderer;
@@ -22,6 +27,7 @@ public class ProjectTerminus implements Screen
     private PhysicsRect driver;
     private PhysicsRect tank;
     private PhysicsBox elasticBox;
+    private ArrayList<RigidBody> bodies;
     private Color COMcolour;
     private Color arrowColour;
     private Vector2 arrowPosition;
@@ -53,25 +59,52 @@ public class ProjectTerminus implements Screen
 
         car.addChild(driver);
         car.addChild(tank);
-        
-        /*float sideLength,
-                        Vector2 initPosition, float initRotation, float initMass,
-                        Vector2 initVel, double initOmega, boolean elasti*/
-        
-        elasticBox = new PhysicsBox(100.f, new Vector2(170, 170), 0, 500.f,
+                
+        elasticBox = new PhysicsBox(100.f, new Vector2(170, 0), 0, 500.f,
                                     new Vector2(), 0.f, true);
+        
+        bodies = new ArrayList<RigidBody>();
+        bodies.add(car);
+        bodies.add(elasticBox);
     }
 
+    /**
+     * Detect and handle any collisions.
+     */
     private void handleCollisions()
     {
-        
+        ArrayList<Pair<RigidBody, RigidBody>> bPhaseResults = doBroadPhase();
+        for(Pair<RigidBody, RigidBody> p : bPhaseResults)
+        {
+            if(p.getLeft() == elasticBox || p.getRight() == elasticBox)
+            {
+                eBoxCurrentColor = eBoxHitColor;
+                break;
+            }
+        }
     }
     
     // Does broadphase collision detection and returns an arraylist containing
     // pairs of possible collisions
-    private ArrayList<Pair<RigidObject, RigidObject>> doBroadphase()    
+    private ArrayList<Pair<RigidBody, RigidBody>> doBroadPhase()    
     {
-        return null;
+        ArrayList<Pair<RigidBody, RigidBody>> possiblyColliding = new ArrayList<Pair<RigidBody, RigidBody>>();
+        for(int b1Index = 0; b1Index < bodies.size(); b1Index++)
+        {
+            RigidBody body1 = bodies.get(b1Index);
+            for(int b2Index = b1Index + 1; b2Index < bodies.size(); b2Index++)
+            {
+                RigidBody body2 = bodies.get(b2Index);
+                double dist = body1.position.dst(body2.position);
+                if(dist < (body1.getBoundingCircleRadius() + body2.getBoundingCircleRadius()))
+                {
+                    Pair<RigidBody, RigidBody> collPair = new Pair<RigidBody, RigidBody>(body1, body2);
+                    possiblyColliding.add(collPair);
+                }
+            }
+        }
+        
+        return possiblyColliding;
     }
     
     /**
@@ -79,7 +112,7 @@ public class ProjectTerminus implements Screen
      * @param bodies The bodies that may be colliding (as identified during
      * broadphase).
      */
-    private void doNarrowPhase(ArrayList<Pair<RigidObject, RigidObject>> bodies)
+    private void doNarrowPhase(ArrayList<Pair<RigidBody, RigidBody>> bodies)
     {
         
     }
@@ -91,7 +124,7 @@ public class ProjectTerminus implements Screen
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         car.update(deltaTime);
-
+        handleCollisions();
         arrowPosition = car.forcePosition;
 
         camera.update();
@@ -132,7 +165,7 @@ public class ProjectTerminus implements Screen
         shapeRenderer.circle(car.COM.x, car.COM.y, 4);
         
         // Draw the elastic box
-        shapeRenderer.setColor(new Color(255.f, 0, 128.f, 1.f));
+        shapeRenderer.setColor(eBoxCurrentColor);
         shapeRenderer.translate(elasticBox.position.x, elasticBox.position.y, 0.f);
         shapeRenderer.rotate(0, 0, 1, elasticBox.rotation);
         shapeRenderer.rect(-elasticBox.sideLen / 2, -elasticBox.sideLen / 2,

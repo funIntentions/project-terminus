@@ -190,8 +190,8 @@ public class PhysicsRect
         float angularAcceleration = determineAngularAcceleration(momentOfInertia);
 
         // Determine Angular Velocity
-        angularVelocity += angularAcceleration * time;
-        angularAccel = angularAcceleration;
+        float angularForce = (angularAcceleration * totalMass);
+        angularVelocity = 1/dragCoefficient * (angularForce - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (angularForce - dragCoefficient * angularVelocity));
 
         float rotationThisFrame =  angularVelocity  * time * (float)(180/Math.PI);
         rotation += rotationThisFrame;

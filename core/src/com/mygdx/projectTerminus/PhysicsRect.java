@@ -25,6 +25,7 @@ public class PhysicsRect
     Vector2 force;
     float linearAccel;
     float angularAccel;
+    public float dragCoefficient = 200;
     private Array<PhysicsRect> childRects;
     private Boolean forceActing;
 
@@ -183,11 +184,6 @@ public class PhysicsRect
 
         Vector2 acceleration = new Vector2(force.x/totalMass, force.y/totalMass);
 
-        // Determine Velocity
-        linearAccel = acceleration.x;
-        velocity.x += acceleration.x * time;
-        velocity.y += acceleration.y * time;
-
         float momentOfInertia = determineMomentOfIntertia();
         this.momentOfInertia = momentOfInertia;
 
@@ -199,7 +195,11 @@ public class PhysicsRect
 
         float rotationThisFrame =  angularVelocity  * time * (float)(180/Math.PI);
         rotation += rotationThisFrame;
-        velocity.rotate(rotationThisFrame);
+
+        // Determine Velocity
+        linearAccel = acceleration.x;
+        velocity.x += acceleration.x * time;
+        velocity.y += acceleration.y * time;
 
         // update position
         COM.x += velocity.x * time;
@@ -226,6 +226,9 @@ public class PhysicsRect
         forcePosition.sub(COM);
         forcePosition.rotate(rotationThisFrame);
         forcePosition.add(COM);
+
+        velocity.x = 1/dragCoefficient * (force.x - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (force.x - dragCoefficient * velocity.x));
+        velocity.y = 1/dragCoefficient * (force.y - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (force.y - dragCoefficient * velocity.y));
     }
 }
 

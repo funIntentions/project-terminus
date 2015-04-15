@@ -3,6 +3,7 @@ package com.mygdx.projectTerminus;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 
 /**
  * Created by Dan on 4/5/2015.
@@ -31,7 +32,7 @@ public class PhysicsRect extends RigidBody
     Vector2 force;
     float linearAccel;
     float angularAccel;
-    public float dragCoefficient = 200;
+    public float dragCoefficient = 250;
     private Array<PhysicsRect> childRects;
     private int currentForces;
     private double circleRadius;
@@ -75,6 +76,34 @@ public class PhysicsRect extends RigidBody
         velocityTotal = new Vector2(0,0);
     }
 
+    public Vector2 backForwardForceLocation()
+    {
+        Vector2 pos = new Vector2(position.x - width/2, position.y);
+        pos.sub(position);
+        pos.rotate(rotation);
+        pos.add(position);
+
+        return pos;
+    }
+
+    public Vector2 turnLeftForceLocation()
+    {
+        Vector2 pos = new Vector2( position.x + width/2, position.y - height/2);
+        pos.sub(position);
+        pos.rotate(rotation);
+        pos.add(position);
+        return pos;
+    }
+
+    public Vector2 turnRightForceLocation()
+    {
+        Vector2 pos = new Vector2( position.x + width/2, position.y + height/2);
+        pos.sub(position);
+        pos.rotate(rotation);
+        pos.add(position);
+        return pos;
+    }
+
     public void addChild(PhysicsRect rect)
     {
         childRects.add(rect);
@@ -84,31 +113,36 @@ public class PhysicsRect extends RigidBody
     public void centralForceOn(Boolean forward)
     {
         currentForces |= forward ? FORWARD_FORCE: BACKWARD_FORCE;
-//        forcePosition.x = position.x - width/2;
-//        forcePosition.y = position.y;
-//        forcePosition.sub(position);
-//        forcePosition.rotate(rotation);
-//        force.x = forward ? 10000 : -10000;
-//        force.y = 0;
-//        force.rotate(rotation);
+    }
+
+    public void centralForceOff(Boolean forward)
+    {
+        if (forward)
+        {
+            if ((currentForces & FORWARD_FORCE) != 0)
+                currentForces ^= FORWARD_FORCE;
+        }
+        else
+        {
+            if ((currentForces & BACKWARD_FORCE) != 0)
+                currentForces ^= BACKWARD_FORCE;
+        }
+    }
+
+    public Boolean isForceOn(int force)
+    {
+        return ((currentForces & force) != 0);
     }
 
     public void rightForceOn()
     {
         currentForces |= TURNING_RIGHT_FORCE;
-//        forceActing = true;
-//        forcePosition.x = position.x + width/2;
-//        forcePosition.y = position.y + height/2;
-//        forcePosition.sub(position);
-//        forcePosition.rotate(rotation);
-//        forcePosition.add(position);
-//        force.x = 5000;
-//        force.y = 0;
-//        force.rotate(rotation);
     }
 
-    public void forceOff() {
-        currentForces &= 0;
+    public void rightForceOff()
+    {
+        if ((currentForces & TURNING_RIGHT_FORCE) != 0)
+            currentForces ^= TURNING_RIGHT_FORCE;
     }
 
     public Boolean isForceOn()
@@ -119,15 +153,12 @@ public class PhysicsRect extends RigidBody
     public void leftForceOn()
     {
         currentForces |= TURNING_LEFT_FORCE;
-//        forceActing = true;
-//        forcePosition.x = position.x + width/2;
-//        forcePosition.y = position.y - height/2;
-//        forcePosition.sub(position);
-//        forcePosition.rotate(rotation);
-//        forcePosition.add(position);
-//        force.x = 5000;
-//        force.y = 0;
-//        force.rotate(rotation);
+    }
+
+    public void leftForceOff()
+    {
+        if ((currentForces & TURNING_LEFT_FORCE) != 0)
+            currentForces ^= TURNING_LEFT_FORCE;
     }
 
     private float determineMomentOfIntertia()

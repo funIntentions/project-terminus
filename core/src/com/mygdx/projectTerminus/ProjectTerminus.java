@@ -20,6 +20,7 @@ public class ProjectTerminus implements Screen
     private PhysicsRect car;
     private PhysicsRect driver;
     private PhysicsRect tank;
+    private PhysicsBox elasticBox;
     private Color COMcolour;
     private Color arrowColour;
     private Vector2 arrowPosition;
@@ -100,6 +101,7 @@ public class ProjectTerminus implements Screen
         shapeRenderer.setColor(COMcolour);
         shapeRenderer.circle(car.COM.x, car.COM.y, 4);
 
+        // Draw the force arrow if a force is currently being applied
         if (car.isForceOn())
         {
             shapeRenderer.setColor(arrowColour);
@@ -108,8 +110,6 @@ public class ProjectTerminus implements Screen
         }
 
         shapeRenderer.end();
-
-
         game.batch.begin();
 
         game.font.drawMultiLine(game.batch, "Car Position: " + car.position + "\n" +

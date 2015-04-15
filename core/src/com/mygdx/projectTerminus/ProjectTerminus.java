@@ -174,37 +174,53 @@ public class ProjectTerminus implements Screen
         shapeRenderer.translate(-elasticBox.position.x, -elasticBox.position.y, 0.f);
 
         // Draw the force arrow if a force is currently being applied
-        if (car.isForceOn(car.BACKWARD_FORCE) || car.isForceOn(car.FORWARD_FORCE))
+        if (car.isForceOn(car.BACKWARD_FORCE))
         {
             arrowPosition = car.backForwardForceLocation();
             shapeRenderer.setColor(arrowColour);
-            shapeRenderer.rectLine(arrowPosition.x, arrowPosition.y, arrowPosition.x + 40, arrowPosition.y, 6);
-            shapeRenderer.triangle(arrowPosition.x + 40, arrowPosition.y - 10,arrowPosition.x + 40, arrowPosition.y + 10, arrowPosition.x + 50, arrowPosition.y);
+            shapeRenderer.translate(arrowPosition.x, arrowPosition.y, 0.f);
+            shapeRenderer.rotate(0, 0, 1, -(180 - car.rotation));
+            shapeRenderer.rectLine(0, 0, 40, 0, 6);
+            shapeRenderer.triangle(40, -10, 40, 10, 50, 0);
+            shapeRenderer.rotate(0, 0, 1, (180 - car.rotation));
+            shapeRenderer.translate(-arrowPosition.x, -arrowPosition.y, 0.f);
+        }
+
+        if (car.isForceOn(car.FORWARD_FORCE))
+        {
+            arrowPosition = car.backForwardForceLocation();
+            shapeRenderer.setColor(arrowColour);
+            shapeRenderer.translate(arrowPosition.x, arrowPosition.y, 0.f);
+            shapeRenderer.rotate(0, 0, 1, car.rotation);
+            shapeRenderer.rectLine(0, 0, 40, 0, 6);
+            shapeRenderer.triangle(40, -10, 40, 10, 50, 0);
+            shapeRenderer.rotate(0, 0, 1, -car.rotation);
+            shapeRenderer.translate(-arrowPosition.x, -arrowPosition.y, 0.f);
         }
 
         if (car.isForceOn(car.TURNING_LEFT_FORCE))
         {
             arrowPosition = car.turnLeftForceLocation();
             shapeRenderer.setColor(arrowColour);
-            shapeRenderer.rectLine(arrowPosition.x, arrowPosition.y, arrowPosition.x + 40, arrowPosition.y, 6);
-            shapeRenderer.triangle(arrowPosition.x + 40, arrowPosition.y - 10,arrowPosition.x + 40, arrowPosition.y + 10, arrowPosition.x + 50, arrowPosition.y);
+            shapeRenderer.translate(arrowPosition.x, arrowPosition.y, 0.f);
+            shapeRenderer.rotate(0, 0, 1, car.rotation);
+            shapeRenderer.rectLine(0, 0, 40, 0, 6);
+            shapeRenderer.triangle(40, -10, 40, 10,  50, 0);
+            shapeRenderer.rotate(0, 0, 1, -car.rotation);
+            shapeRenderer.translate(-arrowPosition.x, -arrowPosition.y, 0.f);
         }
 
         if (car.isForceOn(car.TURNING_RIGHT_FORCE))
         {
             arrowPosition = car.turnRightForceLocation();
             shapeRenderer.setColor(arrowColour);
-            shapeRenderer.rectLine(arrowPosition.x, arrowPosition.y, arrowPosition.x + 40, arrowPosition.y, 6);
-            shapeRenderer.triangle(arrowPosition.x + 40, arrowPosition.y - 10,arrowPosition.x + 40, arrowPosition.y + 10, arrowPosition.x + 50, arrowPosition.y);
+            shapeRenderer.translate(arrowPosition.x, arrowPosition.y, 0.f);
+            shapeRenderer.rotate(0, 0, 1, car.rotation);
+            shapeRenderer.rectLine(0, 0, 40, 0, 6);
+            shapeRenderer.triangle(40, -10, 40, 10, 50, 0);
+            shapeRenderer.rotate(0, 0, 1, -car.rotation);
+            shapeRenderer.translate(-arrowPosition.x, -arrowPosition.y, 0.f);
         }
-
-        /*if (car.isForceOn())
-        {
-
-            shapeRenderer.setColor(arrowColour);
-            shapeRenderer.rectLine(arrowPosition.x, arrowPosition.y, arrowPosition.x + 40, arrowPosition.y, 6);
-            shapeRenderer.triangle(arrowPosition.x + 40, arrowPosition.y - 10,arrowPosition.x + 40, arrowPosition.y + 10, arrowPosition.x + 50, arrowPosition.y);
-        }*/
 
         shapeRenderer.end();
         game.batch.begin();

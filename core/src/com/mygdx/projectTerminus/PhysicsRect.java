@@ -85,6 +85,7 @@ public class PhysicsRect
         forcePosition.add(position);
         force.x = forward ? 10000 : -10000;
         force.y = 0;
+        force.rotate(rotation);
     }
 
     public void rightForceOn()
@@ -97,6 +98,7 @@ public class PhysicsRect
         forcePosition.add(position);
         force.x = 5000;
         force.y = 0;
+        force.rotate(rotation);
     }
 
     public void forceOff() {
@@ -120,6 +122,7 @@ public class PhysicsRect
         forcePosition.add(position);
         force.x = 5000;
         force.y = 0;
+        force.rotate(rotation);
     }
 
     private float determineMomentOfIntertia()
@@ -148,7 +151,6 @@ public class PhysicsRect
     {
         Vector2 r = radial;
         Vector2 f = new Vector2(force);
-        f.rotate(rotation);
         float t = r.crs(f);
 
         float angularAccel = 0.0f;
@@ -181,13 +183,10 @@ public class PhysicsRect
 
         Vector2 acceleration = new Vector2(force.x/totalMass, force.y/totalMass);
 
-        //Determine Velocity
+        // Determine Velocity
         linearAccel = acceleration.x;
-        velocityTotal.x += acceleration.x * time;
-        velocityTotal.y += acceleration.y * time;
-        velocity.x = velocityTotal.x;
-        velocity.y = velocityTotal.y;
-        velocity.rotate(rotation);
+        velocity.x += acceleration.x * time;
+        velocity.y += acceleration.y * time;
 
         float momentOfInertia = determineMomentOfIntertia();
         this.momentOfInertia = momentOfInertia;

@@ -21,6 +21,9 @@ public class PhysicsBox extends RigidBody {
     
     // The length of one side of the box
     public float sideLen;
+    
+    // The positions of each vertex relative the centre
+    private final Vector2[] initVertices;
         
     /**
      * Creates a new PhysicsBox for collision with the awesome car.
@@ -51,15 +54,21 @@ public class PhysicsBox extends RigidBody {
         //    |        |
         //    |________|
         //  V3         V2
+        initVertices = new Vector2[4];
+        initVertices[0] = new Vector2(-sideLength / 2, sideLength / 2);
+        initVertices[1] = new Vector2(sideLength / 2, sideLength / 2);
+        initVertices[2] = new Vector2(sideLength / 2, -sideLength / 2);
+        initVertices[3] = new Vector2(-sideLength / 2, -sideLength / 2);
+        
         vertices = new Vector2[4];
-        vertices[0] = new Vector2(-sideLength / 2, sideLength / 2).add(position);
-        vertices[1] = new Vector2(sideLength / 2, sideLength / 2).add(position);
-        vertices[2] = new Vector2(sideLength / 2, -sideLength / 2).add(position);
-        vertices[3] = new Vector2(-sideLength / 2, -sideLength / 2).add(position);
-
+        for(int i = 0; i < initVertices.length; i++)
+        {
+            vertices[i] = new Vector2(initVertices[i]);
+        }
         updateVertices();
     }
     
+    @Override
     public void update(float deltaTime)
     {
         rotation += angularVelocity * deltaTime;
@@ -72,26 +81,36 @@ public class PhysicsBox extends RigidBody {
     /**
      * Updates the box's vertex positions.
      */
-    private void updateVertices()    
+    private void updateVertices()  
     {
+        
         // Update all of the vertex positions based on the box's current position
         // and rotation
-        for(Vector2 vertex : vertices)
+        for(int i = 0; i < vertices.length; i++)
         {
-            vertex.sub(position);
-            vertex.rotate(rotation);
-            vertex.add(position);
+            vertices[i].x = initVertices[i].x;
+            vertices[i].y = initVertices[i].y;
+            vertices[i].rotate(rotation);
+            vertices[i].x += position.x;
+            vertices[i].y += position.y;
         }
     }
     
+    @Override
     public Vector2[] getVertices()
     {
         return vertices;
     }
     
+    @Override
     public double getBoundingCircleRadius()
     {
         return circleRadius;
     }
     
+    @Override
+    public Vector2 com()
+    {
+        return position;
+    }
 }

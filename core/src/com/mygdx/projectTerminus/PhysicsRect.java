@@ -35,6 +35,7 @@ public class PhysicsRect extends RigidBody
     private Array<PhysicsRect> childRects;
     private int currentForces;
     private double circleRadius;
+    private final Vector2[] initialVerts;
 
     public PhysicsRect(float x, float y, float width, float height, Color colour, float mass, float rotation)
     {
@@ -53,6 +54,19 @@ public class PhysicsRect extends RigidBody
         forcePosition = new Vector2();
                 
         circleRadius = Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height / 2, 2));
+        
+        initialVerts = new Vector2[4];
+        initialVerts[0] = new Vector2(-width / 2, height / 2);
+        initialVerts[1] = new Vector2(width / 2, height / 2);
+        initialVerts[2] = new Vector2(width / 2, -height / 2);
+        initialVerts[3] = new Vector2(-width / 2, -height / 2);
+        
+        vertices = new Vector2[4];
+        for(int i = 0; i < vertices.length; i++)
+        {
+            vertices[i] = new Vector2(initialVerts[i]);
+        }
+        updateVertices();
     }
 
     public void reset(float x, float y, float width, float height, Color colour, float mass, float rotation)
@@ -147,8 +161,6 @@ public class PhysicsRect extends RigidBody
 
             momentOfInertia += I;
         }
-
-
         return momentOfInertia;
     }
 
@@ -173,7 +185,7 @@ public class PhysicsRect extends RigidBody
     @Override
     public Vector2[] getVertices()
     {
-        return null;
+        return vertices;
     }
     
     /**
@@ -309,5 +321,28 @@ public class PhysicsRect extends RigidBody
 
         velocity.x = 1/dragCoefficient * (force.x - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (force.x - dragCoefficient * velocity.x));
         velocity.y = 1/dragCoefficient * (force.y - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (force.y - dragCoefficient * velocity.y));
+        
+        updateVertices();
+    }
+    
+    /**
+     * Updates the box's vertex positions.
+     */
+    private void updateVertices()    
+    {
+        for(int i = 0; i < vertices.length; i++)
+        {
+            vertices[i].x = initialVerts[i].x;
+            vertices[i].y = initialVerts[i].y;
+            vertices[i].rotate(rotation);
+            vertices[i].x += position.x;
+            vertices[i].y += position.y;
+        }
+    }
+    
+    @Override
+    public Vector2 com()
+    {
+        return COM;
     }
 }

@@ -18,7 +18,7 @@ public abstract class RigidBody {
     public Vector2 velocity;
     public float angularVelocity;
     public Vector2 vertices[];
-    
+
     public RigidBody(float initMass, Vector2 initPosition, float initRotation,
                        Vector2 initVel, float initAngleVel)
     {
@@ -47,4 +47,10 @@ public abstract class RigidBody {
      * @param time The time interval over which to integrate.
      */
     public abstract void update(float time);
+    
+    /**
+     * Gets the object's centre of mass.
+     * @return The object's centre of mass.
+     */
+    public abstract Vector2 com();
 }

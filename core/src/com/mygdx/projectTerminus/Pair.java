@@ -13,6 +13,8 @@ public class Pair<L, R> {
     private L left;
     private R right;
     
+    public Pair(){}
+    
     public Pair(L leftObj, R rightObj)
     {
         left = leftObj;
@@ -24,4 +26,10 @@ public class Pair<L, R> {
     
     public R getRight() {return right;}
     public void setRight(R newRight) {right = newRight;}
+    
+    @Override
+    public String toString()
+    {
+        return "Left: " + left.toString() + ", Right: " + right.toString();
+    }
 }

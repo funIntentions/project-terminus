@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import java.util.ArrayList;
 
 /**
@@ -74,13 +75,20 @@ public class ProjectTerminus implements Screen
     private void handleCollisions()
     {
         ArrayList<Pair<RigidBody, RigidBody>> bPhaseResults = doBroadPhase();
-        for(Pair<RigidBody, RigidBody> p : bPhaseResults)
+        ArrayList<CollisionInfo> nPhaseResults = doNarrowPhase(bPhaseResults);
+        
+        for(int i = 0; i < bPhaseResults.size(); i++)
         {
-            if(p.getLeft() == elasticBox || p.getRight() == elasticBox)
-            {
-                eBoxCurrentColor = eBoxHitColor;
-                break;
-            }
+            Pair<RigidBody, RigidBody> curPair = bPhaseResults.get(i);
+            CollisionInfo curInfo = nPhaseResults.get(i);
+            
+            // If we're not looking at the box or there wsa no collision, continue
+            if(!(curPair.getLeft() == elasticBox || curPair.getRight() == elasticBox)) continue;
+            else if(curInfo == null) continue;
+            
+            // If it got to here, then it was hit
+            // Wow is this ever bad code...
+            eBoxCurrentColor = eBoxHitColor;                
         }
     }
     
@@ -112,9 +120,128 @@ public class ProjectTerminus implements Screen
      * @param bodies The bodies that may be colliding (as identified during
      * broadphase).
      */
-    private void doNarrowPhase(ArrayList<Pair<RigidBody, RigidBody>> bodies)
+    private ArrayList<CollisionInfo> doNarrowPhase(ArrayList<Pair<RigidBody, RigidBody>> bodies)
     {
+        // Will contain the information about collisions for each pair, if any
+        final ArrayList<CollisionInfo> collisionInfo = new ArrayList<CollisionInfo>();
+        final int numPairs = bodies.size();
+        boolean didCollide = false;
         
+        for(int i = 0; i < numPairs; i++)
+        {
+            Pair<RigidBody, RigidBody> collPair = bodies.get(i);
+            Vector2[] b1Vertices = collPair.getLeft().getVertices();
+            Vector2[] b2Vertices = collPair.getRight().getVertices();
+            
+            // Use the separating axis theorem to check for collisions
+            // We know that we're using boxes, so we can get away with checking
+            // just 4 axes
+            float x;
+            Vector2 axes[] = new Vector2[4];
+            // Calculate the edge vector and then find the normal (flip the slope and change the sign)
+            axes[0] = new Vector2(b1Vertices[1]).sub(b1Vertices[0]);
+            x = axes[0].x;
+            axes[0].x = -axes[0].y;
+            axes[0].y = x;
+            axes[0].nor();
+            
+            axes[1] = new Vector2(b1Vertices[2]).sub(b1Vertices[1]);
+            x = axes[1].x;
+            axes[1].x = -axes[1].y;
+            axes[1].y = x;
+            axes[1].nor();
+            
+            axes[2] = new Vector2(b2Vertices[1]).sub(b2Vertices[0]);
+            x = axes[2].x;
+            axes[2].x = -axes[2].y;
+            axes[2].y = x;
+            axes[2].nor();
+            
+            axes[3] = new Vector2(b2Vertices[2]).sub(b2Vertices[1]);
+            x = axes[3].x;
+            axes[3].x = -axes[3].y;
+            axes[3].y = x;
+            axes[3].nor();
+            
+            int aIndex;
+            for(aIndex = 0; aIndex < axes.length; aIndex++)
+            {
+                Pair<Vector2, Vector2> minMax1 = new Pair<Vector2, Vector2>();
+                Pair<Vector2, Vector2> minMax2 = new Pair<Vector2, Vector2>();;
+                
+                Pair<Float, Float> proj1 = new Pair<Float, Float>();
+                Pair<Float, Float> proj2 = new Pair<Float, Float>();
+                
+                getMinMax(collPair.getLeft(), axes[aIndex], minMax1, proj1);
+                getMinMax(collPair.getRight(), axes[aIndex], minMax2, proj2);
+                
+                //System.out.println("Projection 1: " + proj1 + ", Projection 2: " + proj2);
+                
+                // If there's a gap between the projected vectors, then there was no collision
+                if(proj1.getRight() < proj2.getLeft() || 
+                   proj2.getRight() < proj1.getLeft())
+                {
+                    collisionInfo.add(i, null);
+                    break;
+                }
+            }
+            
+            // If we looped through every axis and none of them had a gap, then
+            // there was a collision
+            if(aIndex == axes.length)
+            {
+                // Get the contact manifold
+                
+                // Add a dummy one for now; this is where we would get the manifold though
+                CollisionInfo c = new CollisionInfo(0.f, null, null, null, null, null);
+                collisionInfo.add(i, c);
+            }
+        }
+        return collisionInfo;
+    }
+    
+    /**
+     * Gets the minimum and maximum points projected on a given axis.
+     * @param rect      The rectangle for which to get the points.
+     * @param axis      The axis along which the rectangle's points will be projected.
+     * @param pointsOut A pair in which to store the points. 
+     *                  Left is the minimum point, right the maximum.
+     * @param projectionsOut A pair in which to store the projections. Left is the
+     *                       minimum projection, right the maximum.
+     */
+    private void getMinMax(RigidBody rect, Vector2 axis,
+                                             Pair<Vector2, Vector2> pointsOut,
+                                             Pair<Float, Float> projectionsOut)
+    {
+        final Vector2[] vertices = rect.getVertices();
+        final int numVertices = vertices.length;
+        Vector2 minPoint = vertices[0];
+        Vector2 maxPoint = vertices[0];
+        float minProj = vertices[0].dot(axis);
+        float maxProj = vertices[0].dot(axis);
+        
+        // Project each point on to the axis of projection and determine if it
+        // should be the new maximum or minimum point
+        for(int i = 1; i < numVertices; i++)
+        {
+            float dot = vertices[i].dot(axis);
+            if(dot < minProj)
+            {
+                minPoint = vertices[i];
+                minProj = dot;
+            }
+            else if(dot > maxProj)
+            {
+                maxPoint = vertices[i];
+                maxProj = dot;
+            }
+        }
+        
+        pointsOut.setLeft(minPoint);
+        pointsOut.setRight(maxPoint);
+        
+        projectionsOut.setLeft(minProj);
+        projectionsOut.setRight(maxProj);
     }
     
     @Override

@@ -261,7 +261,7 @@ public class ProjectTerminus implements Screen
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(1, 1, 0, 1);
         shapeRenderer.line(-Gdx.graphics.getWidth() / 2, 0, Gdx.graphics.getWidth() / 2, 0); // X Axis
-        shapeRenderer.line(0, -Gdx.graphics.getHeight()/2, 0, Gdx.graphics.getHeight()/2); // Y Axis
+        shapeRenderer.line(0, -Gdx.graphics.getHeight() / 2, 0, Gdx.graphics.getHeight() / 2); // Y Axis
         shapeRenderer.end();
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled); // draw car
@@ -270,22 +270,22 @@ public class ProjectTerminus implements Screen
         shapeRenderer.identity();
         shapeRenderer.translate(car.position.x, car.position.y, 0.f);
         shapeRenderer.rotate(0, 0, 1, car.rotation);
-        shapeRenderer.rect(-car.width/2, -car.height/2, car.width, car.height); // Car
-        shapeRenderer.rotate(0,0, 1, -car.rotation);
+        shapeRenderer.rect(-car.width / 2, -car.height / 2, car.width, car.height); // Car
+        shapeRenderer.rotate(0, 0, 1, -car.rotation);
         shapeRenderer.translate(-car.position.x, -car.position.y, 0.f);
 
         shapeRenderer.setColor(driver.colour);
         shapeRenderer.translate(driver.position.x, driver.position.y, 0.f);
-        shapeRenderer.rotate(0,0,1, driver.rotation);
-        shapeRenderer.rect(-driver.width/2, -driver.height/2, driver.width, driver.height); // Driver
-        shapeRenderer.rotate(0,0,1,-driver.rotation);
+        shapeRenderer.rotate(0, 0, 1, driver.rotation);
+        shapeRenderer.rect(-driver.width / 2, -driver.height / 2, driver.width, driver.height); // Driver
+        shapeRenderer.rotate(0, 0, 1, -driver.rotation);
         shapeRenderer.translate(-driver.position.x, -driver.position.y, 0.f);
 
         shapeRenderer.setColor(tank.colour);
         shapeRenderer.translate(tank.position.x, tank.position.y, 0.f);
         shapeRenderer.rotate(0, 0, 1, tank.rotation);
-        shapeRenderer.rect(-tank.width/2, -tank.height / 2, tank.width, tank.height); // Driver
-        shapeRenderer.rotate(0,0,1,-tank.rotation);
+        shapeRenderer.rect(-tank.width / 2, -tank.height / 2, tank.width, tank.height); // Driver
+        shapeRenderer.rotate(0, 0, 1, -tank.rotation);
         shapeRenderer.translate(-tank.position.x, -tank.position.y, 0.f);
 
         shapeRenderer.setColor(COMcolour);
@@ -301,11 +301,52 @@ public class ProjectTerminus implements Screen
         shapeRenderer.translate(-elasticBox.position.x, -elasticBox.position.y, 0.f);
 
         // Draw the force arrow if a force is currently being applied
-        if (car.isForceOn())
+        if (car.isForceOn(car.BACKWARD_FORCE))
         {
+            arrowPosition = car.backForwardForceLocation();
             shapeRenderer.setColor(arrowColour);
-            shapeRenderer.rectLine(arrowPosition.x, arrowPosition.y, arrowPosition.x + 40, arrowPosition.y, 6);
-            shapeRenderer.triangle(arrowPosition.x + 40, arrowPosition.y - 10,arrowPosition.x + 40, arrowPosition.y + 10, arrowPosition.x + 50, arrowPosition.y);
+            shapeRenderer.translate(arrowPosition.x, arrowPosition.y, 0.f);
+            shapeRenderer.rotate(0, 0, 1, -(180 - car.rotation));
+            shapeRenderer.rectLine(0, 0, 40, 0, 6);
+            shapeRenderer.triangle(40, -10, 40, 10, 50, 0);
+            shapeRenderer.rotate(0, 0, 1, (180 - car.rotation));
+            shapeRenderer.translate(-arrowPosition.x, -arrowPosition.y, 0.f);
+        }
+
+        if (car.isForceOn(car.FORWARD_FORCE))
+        {
+            arrowPosition = car.backForwardForceLocation();
+            shapeRenderer.setColor(arrowColour);
+            shapeRenderer.translate(arrowPosition.x, arrowPosition.y, 0.f);
+            shapeRenderer.rotate(0, 0, 1, car.rotation);
+            shapeRenderer.rectLine(0, 0, 40, 0, 6);
+            shapeRenderer.triangle(40, -10, 40, 10, 50, 0);
+            shapeRenderer.rotate(0, 0, 1, -car.rotation);
+            shapeRenderer.translate(-arrowPosition.x, -arrowPosition.y, 0.f);
+        }
+
+        if (car.isForceOn(car.TURNING_LEFT_FORCE))
+        {
+            arrowPosition = car.turnLeftForceLocation();
+            shapeRenderer.setColor(arrowColour);
+            shapeRenderer.translate(arrowPosition.x, arrowPosition.y, 0.f);
+            shapeRenderer.rotate(0, 0, 1, car.rotation);
+            shapeRenderer.rectLine(0, 0, 40, 0, 6);
+            shapeRenderer.triangle(40, -10, 40, 10,  50, 0);
+            shapeRenderer.rotate(0, 0, 1, -car.rotation);
+            shapeRenderer.translate(-arrowPosition.x, -arrowPosition.y, 0.f);
+        }
+
+        if (car.isForceOn(car.TURNING_RIGHT_FORCE))
+        {
+            arrowPosition = car.turnRightForceLocation();
+            shapeRenderer.setColor(arrowColour);
+            shapeRenderer.translate(arrowPosition.x, arrowPosition.y, 0.f);
+            shapeRenderer.rotate(0, 0, 1, car.rotation);
+            shapeRenderer.rectLine(0, 0, 40, 0, 6);
+            shapeRenderer.triangle(40, -10, 40, 10, 50, 0);
+            shapeRenderer.rotate(0, 0, 1, -car.rotation);
+            shapeRenderer.translate(-arrowPosition.x, -arrowPosition.y, 0.f);
         }
 
         shapeRenderer.end();
@@ -367,34 +408,40 @@ public class ProjectTerminus implements Screen
             driver.mass -= 10;
         }
 
-        if (!Gdx.input.isKeyPressed(Input.Keys.UP) &&
-                !Gdx.input.isKeyPressed(Input.Keys.DOWN) &&
-                !Gdx.input.isKeyPressed(Input.Keys.RIGHT) &&
-                !Gdx.input.isKeyPressed(Input.Keys.LEFT))
+        if (Gdx.input.isKeyPressed(Input.Keys.UP))
         {
-            car.forceOff();
+            car.centralForceOn(true);
         }
         else
         {
-            if (Gdx.input.isKeyPressed(Input.Keys.UP))
-            {
-                car.centralForceOn(true);
-            }
+            car.centralForceOff(true);
+        }
 
-            if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
-            {
-                car.centralForceOn(false);
-            }
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
+        {
+            car.centralForceOn(false);
+        }
+        else
+        {
+            car.centralForceOff(false);
+        }
 
-            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-            {
-                car.rightForceOn();
-            }
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+        {
+            car.rightForceOn();
+        }
+        else
+        {
+            car.rightForceOff();
+        }
 
-            if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
-            {
-                car.leftForceOn();
-            }
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
+        {
+            car.leftForceOn();
+        }
+        else
+        {
+            car.leftForceOff();
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.BACKSPACE))

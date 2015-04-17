@@ -6,6 +6,7 @@
 package com.mygdx.projectTerminus;
 
 import com.badlogic.gdx.math.Vector2;
+import java.util.ArrayList;
 
 /**
  *
@@ -39,7 +40,7 @@ public abstract class RigidBody {
      * Gets the array of all edges.
      * @return The edges array.
      */
-    public abstract Vector2[] getEdges();
+    public abstract ArrayList<Pair<Vector2, Vector2>> getEdges();
     
     /**
      * Gets the radius of the bounding circle to be used for broadphase collision

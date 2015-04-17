@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.sun.org.apache.xpath.internal.operations.Bool;
+import java.util.ArrayList;
 
 /**
  * Created by Dan on 4/5/2015.
@@ -37,7 +38,7 @@ public class PhysicsRect extends RigidBody
     private int currentForces;
     private double circleRadius;
     private final Vector2[] initialVerts;
-    private Vector2[] edges;
+    private final ArrayList<Pair<Vector2, Vector2>> edges;
 
     public PhysicsRect(float x, float y, float width, float height, Color colour, float mass, float rotation)
     {
@@ -64,11 +65,17 @@ public class PhysicsRect extends RigidBody
         initialVerts[3] = new Vector2(-width / 2, -height / 2);
         
         vertices = new Vector2[4];
-        edges = new Vector2[4];
+        edges = new ArrayList<Pair<Vector2, Vector2>>(initialVerts.length);
         for(int i = 0; i < vertices.length; i++)
         {
             vertices[i] = new Vector2(initialVerts[i]);
-            edges[i] = new Vector2();
+        }
+        
+        for(int i = 0; i < vertices.length; i++)
+        {
+            Vector2 nextV = i == vertices.length - 1 ? vertices[0] : vertices[i + 1];
+            Pair<Vector2, Vector2> edge = new Pair<Vector2, Vector2>(vertices[i], nextV);
+            edges.add(edge);
         }
         updateVertices();
     }
@@ -223,7 +230,7 @@ public class PhysicsRect extends RigidBody
     }
     
     @Override
-    public Vector2[] getEdges()
+    public ArrayList<Pair<Vector2, Vector2>> getEdges()
     {
         return edges;
     }
@@ -377,15 +384,6 @@ public class PhysicsRect extends RigidBody
             vertices[i].rotate(rotation);
             vertices[i].x += position.x;
             vertices[i].y += position.y;
-        }
-        
-        // Have to do this after the vertices since they won't be properly rotated
-        // otherwise
-        for(int i = 0; i < vertices.length; i++)
-        {
-            Vector2 edgeV = i == vertices.length - 1 ? vertices[0] : vertices[i + 1];
-            edges[i].x = edgeV.x - vertices[i].x;
-            edges[i].y = edgeV.y - vertices[i].y;
         }
     }
     

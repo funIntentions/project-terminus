@@ -131,33 +131,36 @@ public class ProjectTerminus implements Screen
         {
             Pair<RigidBody, RigidBody> collPair = bodies.get(i);
             Vector2[] b1Vertices = collPair.getLeft().getVertices();
-            Vector2[] b1Edges = collPair.getLeft().getEdges();
-            Vector2[] b2Edges = collPair.getRight().getEdges();
             Vector2[] b2Vertices = collPair.getRight().getVertices();
-                        
+            
             // Use the separating axis theorem to check for collisions
             // We know that we're using boxes, so we can get away with checking
             // just 4 axes
+            float x;
             Vector2 axes[] = new Vector2[4];
             // Calculate the edge vector and then find the normal (flip the slope and change the sign)
-            axes[0] = new Vector2();
-            axes[0].x = -b1Edges[0].y;
-            axes[0].y = b1Edges[0].x;
+            axes[0] = new Vector2(b1Vertices[1]).sub(b1Vertices[0]);
+            x = axes[0].x;
+            axes[0].x = -axes[0].y;
+            axes[0].y = x;
             axes[0].nor();
             
-            axes[1] = new Vector2();
-            axes[1].x = -b1Edges[1].y;
-            axes[1].y = b1Edges[1].x;
+            axes[1] = new Vector2(b1Vertices[2]).sub(b1Vertices[1]);
+            x = axes[1].x;
+            axes[1].x = -axes[1].y;
+            axes[1].y = x;
             axes[1].nor();
             
-            axes[2] = new Vector2();
-            axes[2].x = -b2Edges[0].y;
-            axes[2].y = b2Edges[0].x;
+            axes[2] = new Vector2(b2Vertices[1]).sub(b2Vertices[0]);
+            x = axes[2].x;
+            axes[2].x = -axes[2].y;
+            axes[2].y = x;
             axes[2].nor();
             
-            axes[3] = new Vector2();
-            axes[3].x = -b2Edges[3].y;
-            axes[3].y = b2Edges[3].x;
+            axes[3] = new Vector2(b2Vertices[2]).sub(b2Vertices[1]);
+            x = axes[3].x;
+            axes[3].x = -axes[3].y;
+            axes[3].y = x;
             axes[3].nor();
             
             int aIndex;
@@ -187,7 +190,15 @@ public class ProjectTerminus implements Screen
             // there was a collision
             if(aIndex == axes.length)
             {
-                // Get the contact manifold
+                // Determine the referent and incident faces
+                // We always assume that the referent face belongs to the first object in the collision pair
+                // Vector2 referentEdge = b1Edges[0];
+                // Vector2 incidentEdge = b2Edges[0];
+                // float mostPerpIncident = incidentEdge
+
+                /*
+                    for(
+                */
                 
                 // Add a dummy one for now; this is where we would get the manifold though
                 CollisionInfo c = new CollisionInfo(0.f, null, null, null, null, null);

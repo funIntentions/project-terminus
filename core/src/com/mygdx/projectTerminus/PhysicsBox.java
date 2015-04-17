@@ -6,6 +6,7 @@
 package com.mygdx.projectTerminus;
 
 import com.badlogic.gdx.math.Vector2;
+import java.util.ArrayList;
 
 /**
  *
@@ -26,7 +27,7 @@ public class PhysicsBox extends RigidBody {
     private final Vector2[] initVertices;
     
     // The edges connecting the vertices
-    private Vector2[] edges;
+    private final ArrayList<Pair<Vector2, Vector2>> edges;
         
     /**
      * Creates a new PhysicsBox for collision with the awesome car.
@@ -64,11 +65,18 @@ public class PhysicsBox extends RigidBody {
         initVertices[3] = new Vector2(sideLength / 2, sideLength / 2);
         
         vertices = new Vector2[4];
-        edges = new Vector2[4];
+        edges = new ArrayList<Pair<Vector2, Vector2>>(4);
+        
         for(int i = 0; i < initVertices.length; i++)
         {
             vertices[i] = new Vector2(initVertices[i]);
-            edges[i] = new Vector2();
+        }
+        
+        for(int i = 0; i < vertices.length; i++)
+        {
+            Vector2 nextV = i == vertices.length - 1 ? vertices[0] : vertices[i + 1];
+            Pair<Vector2, Vector2> edge = new Pair<Vector2, Vector2>(vertices[i], nextV);
+            edges.add(edge);
         }
         updateVertices();
     }
@@ -99,15 +107,6 @@ public class PhysicsBox extends RigidBody {
             vertices[i].x += position.x;
             vertices[i].y += position.y;
         }
-        
-        for(int i = 0; i < edges.length; i++)
-        {
-            // Update the edges at the same time, making sure to properly handle
-            // the last edge (final vertex - the first vertex)
-            Vector2 edgeV = i == vertices.length - 1 ? vertices[0] : vertices[i + 1];
-            edges[i].x = edgeV.x - vertices[i].x;
-            edges[i].y = edgeV.y - vertices[i].y;
-        }
     }
     
     @Override
@@ -117,7 +116,7 @@ public class PhysicsBox extends RigidBody {
     }
     
     @Override
-    public Vector2[] getEdges()
+    public ArrayList<Pair<Vector2, Vector2>> getEdges()
     {
         return edges;
     }

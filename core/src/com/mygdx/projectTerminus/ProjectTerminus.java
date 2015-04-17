@@ -161,6 +161,7 @@ public class ProjectTerminus implements Screen
             axes[3].nor();
             
             int aIndex;
+            float minTranslation = Float.MAX_VALUE;
             for(aIndex = 0; aIndex < axes.length; aIndex++)
             {
                 Pair<Vector2, Vector2> minMax1 = new Pair<Vector2, Vector2>();
@@ -171,8 +172,18 @@ public class ProjectTerminus implements Screen
                 
                 getMinMax(collPair.getLeft(), axes[aIndex], minMax1, proj1);
                 getMinMax(collPair.getRight(), axes[aIndex], minMax2, proj2);
-                
-                //System.out.println("Projection 1: " + proj1 + ", Projection 2: " + proj2);
+
+                float translation;
+                if (proj1.getRight() > proj2.getLeft())
+                {
+                    translation = proj1.getRight() - proj2.getLeft();
+                    if (translation < minTranslation) minTranslation = translation;
+                }
+                else if(proj2.getRight() > proj1.getLeft())
+                {
+                    translation = proj2.getRight() - proj1.getLeft();
+                    if (translation < minTranslation) minTranslation = translation;
+                }
                 
                 // If there's a gap between the projected vectors, then there was no collision
                 if(proj1.getRight() < proj2.getLeft() || 

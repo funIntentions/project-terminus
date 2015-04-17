@@ -24,6 +24,9 @@ public class PhysicsBox extends RigidBody {
     
     // The positions of each vertex relative the centre
     private final Vector2[] initVertices;
+    
+    // The edges connecting the vertices
+    private Vector2[] edges;
         
     /**
      * Creates a new PhysicsBox for collision with the awesome car.
@@ -48,22 +51,24 @@ public class PhysicsBox extends RigidBody {
         
         //  The box's vertices are arranged as below.
         //
-        //  V0 ________V1
+        //  V0 ________V3
         //    |        |
         //    |        |
         //    |        |
         //    |________|
-        //  V3         V2
+        //  V1         V2
         initVertices = new Vector2[4];
         initVertices[0] = new Vector2(-sideLength / 2, sideLength / 2);
-        initVertices[1] = new Vector2(sideLength / 2, sideLength / 2);
+        initVertices[1] = new Vector2(-sideLength / 2, -sideLength / 2);
         initVertices[2] = new Vector2(sideLength / 2, -sideLength / 2);
-        initVertices[3] = new Vector2(-sideLength / 2, -sideLength / 2);
+        initVertices[3] = new Vector2(sideLength / 2, sideLength / 2);
         
         vertices = new Vector2[4];
+        edges = new Vector2[4];
         for(int i = 0; i < initVertices.length; i++)
         {
             vertices[i] = new Vector2(initVertices[i]);
+            edges[i] = new Vector2();
         }
         updateVertices();
     }
@@ -94,12 +99,27 @@ public class PhysicsBox extends RigidBody {
             vertices[i].x += position.x;
             vertices[i].y += position.y;
         }
+        
+        for(int i = 0; i < edges.length; i++)
+        {
+            // Update the edges at the same time, making sure to properly handle
+            // the last edge (final vertex - the first vertex)
+            Vector2 edgeV = i == vertices.length - 1 ? vertices[0] : vertices[i + 1];
+            edges[i].x = edgeV.x - vertices[i].x;
+            edges[i].y = edgeV.y - vertices[i].y;
+        }
     }
     
     @Override
     public Vector2[] getVertices()
     {
         return vertices;
+    }
+    
+    @Override
+    public Vector2[] getEdges()
+    {
+        return edges;
     }
     
     @Override

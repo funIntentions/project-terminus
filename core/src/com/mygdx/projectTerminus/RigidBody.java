@@ -17,7 +17,7 @@ public abstract class RigidBody {
     public float rotation;
     public Vector2 velocity;
     public float angularVelocity;
-    public Vector2 vertices[];
+    protected Vector2 vertices[];
 
     public RigidBody(float initMass, Vector2 initPosition, float initRotation,
                        Vector2 initVel, float initAngleVel)
@@ -34,6 +34,12 @@ public abstract class RigidBody {
      * @return The list of vertices for this rigid object.
      */
     public abstract Vector2[] getVertices();
+    
+    /**
+     * Gets the array of all edges.
+     * @return The edges array.
+     */
+    public abstract Vector2[] getEdges();
     
     /**
      * Gets the radius of the bounding circle to be used for broadphase collision

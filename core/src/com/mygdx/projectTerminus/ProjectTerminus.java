@@ -96,6 +96,17 @@ public class ProjectTerminus implements Screen
     // pairs of possible collisions
     private ArrayList<Pair<RigidBody, RigidBody>> doBroadPhase()    
     {
+        for(int b1Index = 0; b1Index < bodies.size(); b1Index++) {
+            RigidBody body = bodies.get(b1Index);
+            if (Math.abs(body.position.y) > 400) {
+                body.velocity.y *= -1;
+            }
+
+            if (Math.abs(body.position.x) > 400) {
+                body.velocity.x *= -1;
+            }
+        }
+
         ArrayList<Pair<RigidBody, RigidBody>> possiblyColliding = new ArrayList<Pair<RigidBody, RigidBody>>();
         for(int b1Index = 0; b1Index < bodies.size(); b1Index++)
         {

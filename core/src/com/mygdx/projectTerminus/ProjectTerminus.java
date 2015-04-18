@@ -214,7 +214,9 @@ public class ProjectTerminus implements Screen
                 // We always assume that the referent face belongs to the first object in the collision pair
                 Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]), collPair.getLeft());
                 Pair<Vector2, Vector2> bestEdge2 = getBestEdge(new Vector2(axes[minAxisIdx]).scl(-1), collPair.getRight());
-                
+
+                ArrayList<Vector2> collisionPoints = findCollisonPoints(axes[minAxisIdx], bestEdge1, bestEdge2);
+
                 // Add a dummy one for now; this is where we would get the manifold though
                 CollisionInfo c = new CollisionInfo(0.f, null, null, null, null, null);
                 collisionInfo.add(i, c);

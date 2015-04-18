@@ -59,5 +59,11 @@ public abstract class RigidBody {
      * Gets the object's centre of mass.
      * @return The object's centre of mass.
      */
-    public abstract Vector2 com();
+    public abstract Vector2 getCentreOfMass();
+    
+    /**
+     * Gets this object's moment of inertia.
+     * @return The object's moment of inertia.
+     */
+    public abstract float getMomentOfInertia();
 }

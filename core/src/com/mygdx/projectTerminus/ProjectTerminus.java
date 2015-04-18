@@ -77,18 +77,16 @@ public class ProjectTerminus implements Screen
         ArrayList<Pair<RigidBody, RigidBody>> bPhaseResults = doBroadPhase();
         ArrayList<CollisionInfo> nPhaseResults = doNarrowPhase(bPhaseResults);
         
-        for(int i = 0; i < bPhaseResults.size(); i++)
+        for(int i = 0; i < nPhaseResults.size(); i++)
         {
-            Pair<RigidBody, RigidBody> curPair = bPhaseResults.get(i);
             CollisionInfo curInfo = nPhaseResults.get(i);
             
             // If we're not looking at the box or there wsa no collision, continue
-            if(!(curPair.getLeft() == elasticBox || curPair.getRight() == elasticBox)) continue;
-            else if(curInfo == null) continue;
-            
+            if(!(curInfo.bodies.getLeft() == elasticBox || curInfo.bodies.getRight() == elasticBox)) continue;            
             // If it got to here, then it was hit
             // Wow is this ever bad code...
-            eBoxCurrentColor = eBoxHitColor;                
+            eBoxCurrentColor = eBoxHitColor;
+            System.out.println("Collision Info: " + curInfo);
         }
     }
     
@@ -125,7 +123,6 @@ public class ProjectTerminus implements Screen
         // Will contain the information about collisions for each pair, if any
         final ArrayList<CollisionInfo> collisionInfo = new ArrayList<CollisionInfo>();
         final int numPairs = bodies.size();
-        boolean didCollide = false;
         
         for(int i = 0; i < numPairs; i++)
         {
@@ -195,7 +192,6 @@ public class ProjectTerminus implements Screen
                 if(proj1.getRight() < proj2.getLeft() || 
                    proj2.getRight() < proj1.getLeft())
                 {
-                    collisionInfo.add(i, null);
                     break;
                 }
             }
@@ -214,11 +210,9 @@ public class ProjectTerminus implements Screen
                 // We always assume that the referent face belongs to the first object in the collision pair
                 Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]), collPair.getLeft());
                 Pair<Vector2, Vector2> bestEdge2 = getBestEdge(new Vector2(axes[minAxisIdx]).scl(-1), collPair.getRight());
-
                 ArrayList<Vector2> collisionPoints = findCollisonPoints(axes[minAxisIdx], bestEdge1, bestEdge2);
-
-                // Add a dummy one for now; this is where we would get the manifold though
-                CollisionInfo c = new CollisionInfo(0.f, null, null, null, null, null);
+                
+                CollisionInfo c = new CollisionInfo(collPair, collisionPoints, minTranslation, axes[minAxisIdx]);
                 collisionInfo.add(i, c);
             }
         }
@@ -296,15 +290,14 @@ public class ProjectTerminus implements Screen
         if (flip) refEdgeNormal.scl(-1);
 
         double offset3 = refEdgeNormal.dot(refEdge.getRight());
+        Vector2 point = clippedPoints.get(0);
+        Vector2 point2 = clippedPoints.get(1);
 
-        if (refEdgeNormal.dot(clippedPoints.get(0)) - offset3 < 0.0)
-        {
-            clippedPoints.remove(0);
-        }
-        if (refEdgeNormal.dot(clippedPoints.get(1)) - offset3 < 0.0)
-        {
-            clippedPoints.remove(1);
-        }
+        if (refEdgeNormal.dot(point) - offset3 < 0.0)
+            clippedPoints.remove(point);
+        
+        if (refEdgeNormal.dot(point2) - offset3 < 0.0)
+            clippedPoints.remove(point2);
 
         return clippedPoints;
     }
@@ -383,6 +376,92 @@ public class ProjectTerminus implements Screen
         
         projectionsOut.setLeft(minProj);
         projectionsOut.setRight(maxProj);
+    }
+    
+    private void collide(final RigidBody b1, final RigidBody b2,
+                         final float elasticity)
+    {
+//        Vector3 unitNormal = new Vector3(1, 0, 0);
+//        Vector3 P = new Vector3(0,0,0);
+//        P.x = circle2.position.x - 20;
+//        P.y = circle1.position.y + ((circle2.position.y - circle1.position.y)/2.0f);
+//
+//        Vector3 r1 = new Vector3((P.x - circle1.position.x), (P.y - circle1.position.y), 0);
+//        Vector3 r2 = new Vector3((P.x - circle2.position.x), (P.y - circle2.position.y), 0);
+//
+//        initialOrbital1 = r1.y * circle1.mass * circle1.velocity.x;
+//        initialOrbital2 = r2.y * circle2.mass * circle2.velocity.x;
+//
+//        float momentOfInertia1 = (circle1.mass * (float)(Math.pow(40, 2) + Math.pow(40, 2)))/12.0f;
+//        float momentOfInertia2 = (circle2.mass * (float)(Math.pow(40, 2) + Math.pow(40, 2)))/ 12.0f;
+//
+//        float vR = circle1.velocity.x - circle2.velocity.x;
+//
+//        // calculate impulse J
+//        float coefficient = -vR * (e + 1.0f);
+//        float inverseMasses = (1.0f/circle1.mass) + (1.0f/circle2.mass);
+//
+//        Vector3 elementOne = new Vector3(r1);
+//        elementOne = elementOne.crs(unitNormal);
+//        elementOne.x /= momentOfInertia1;
+//        elementOne.y /= momentOfInertia1;
+//        elementOne.z /= momentOfInertia1;
+//        elementOne = elementOne.crs(r1);
+//        float componentOne = unitNormal.dot(elementOne); //Vector3.dot(unitNormal.x, unitNormal.y, unitNormal.z, elementOne.x, elementOne.y, elementOne.z);
+//
+//        Vector3 elementTwo = new Vector3(r2);
+//        elementTwo = elementTwo.crs(unitNormal);
+//        elementTwo.x /= momentOfInertia2;
+//        elementTwo.y /= momentOfInertia2;
+//        elementTwo.z /= momentOfInertia2;
+//        elementTwo = elementTwo.crs(r2);
+//        float componentTwo = unitNormal.dot(elementTwo); //Vector3.dot(unitNormal.x, unitNormal.y, unitNormal.z, elementTwo.x, elementTwo.y, elementTwo.z);
+//
+//        float denominator = inverseMasses + componentOne + componentTwo;
+//
+//        float J = coefficient * (1.0f/denominator);
+//
+//        float Uf = J/circle1.mass + circle1.velocity.x;
+//        float Vf = -J/circle2.mass + circle2.velocity.x;
+//
+//        pix = (circle1.mass * initialVelocityU.x) + (circle2.mass * initialVelocityV.x);
+//        pfx = (circle1.mass * circle1.velocity.x) + (circle2.mass * circle2.velocity.x);
+//        pfy = (circle1.mass * circle1.velocity.y) + (circle2.mass * circle2.velocity.y);
+//
+//        impulse = J;
+//        colisionCount++;
+//
+//        circle1.velocity.x = Uf * unitNormal.x;
+//        circle1.velocity.y = Uf * unitNormal.y;
+//        circle2.velocity.x = Vf * unitNormal.x;
+//        circle2.velocity.y = Vf * unitNormal.y;
+//
+//        Vector3 angularVelocity1 = new Vector3(unitNormal);
+//        angularVelocity1.x = angularVelocity1.x * J;
+//        angularVelocity1.y = angularVelocity1.y * J;
+//        angularVelocity1.z = angularVelocity1.z * J;
+//        angularVelocity1 = (new Vector3(r1)).crs(angularVelocity1);
+//        rect1W = angularVelocity1.z * (1.0f/momentOfInertia1) * (float)(180.0f/Math.PI);
+//
+//        Vector3 angularVelocity2 = new Vector3(unitNormal);
+//        angularVelocity2.x = angularVelocity2.x * -J;
+//        angularVelocity2.y = angularVelocity2.y * -J;
+//        angularVelocity2.z = angularVelocity2.z * -J;
+//        angularVelocity2 = (new Vector3(r2)).crs(angularVelocity2);
+//        rect2W = angularVelocity2.z * (1.0f/momentOfInertia2) * (float)(180.0f/Math.PI);
+//
+//        circle1KEf = (0.5f) * circle1.mass * (float)Math.pow(circle1.velocity.x, 2);
+//        circle2KEf = (0.5f) * circle2.mass * (float)Math.pow(circle2.velocity.x, 2);
+//
+//        rect1RKEf = (0.5f) * momentOfInertia1 * (float)Math.pow(rect1W * (Math.PI/180.0f), 2);
+//        rect2RKEf = (0.5f) * momentOfInertia2 * (float)Math.pow(rect2W * (Math.PI/180.0f), 2);
+//
+//        finalOrbital1 = r1.y * circle1.mass * circle1.velocity.len();
+//        finalOrbital2 = r2.y * circle2.mass * circle2.velocity.len();
+//        finalRotational1 = momentOfInertia1 * (float)(rect1W * (Math.PI/180.0f));
+//        finalRotational2 = momentOfInertia2 * (float)(rect2W * (Math.PI/180.0f));
+//
+//        collided = true;
     }
     
     @Override

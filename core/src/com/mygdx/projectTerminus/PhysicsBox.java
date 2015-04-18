@@ -128,8 +128,15 @@ public class PhysicsBox extends RigidBody {
     }
     
     @Override
-    public Vector2 com()
+    public Vector2 getCentreOfMass()
     {
         return position;
+    }
+    
+    @Override
+    public float getMomentOfInertia()
+    {
+        return (float)((this.mass * (Math.pow(sideLen, 2) + Math.pow(sideLen, 2)))
+                / 12);
     }
 }

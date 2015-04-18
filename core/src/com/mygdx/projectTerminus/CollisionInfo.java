@@ -6,6 +6,7 @@
 package com.mygdx.projectTerminus;
 
 import com.badlogic.gdx.math.Vector2;
+import java.util.ArrayList;
 
 /**
  * Contains the information about a collision: the point and time of collision,
@@ -14,23 +15,32 @@ import com.badlogic.gdx.math.Vector2;
  * @author Shane
  */
 public class CollisionInfo {
-    public final float time;
-    public final Vector2 collPoints[];
-    public final Vector2 p1;
-    public final Vector2 p2;
+    public final ArrayList<Vector2> manifold;
+    public final float depth;
     public final Vector2 normal;
-    public final Vector2 tangential;
+    public final Pair<RigidBody, RigidBody> bodies;
     
-    public CollisionInfo(final float collisionTime, final Vector2 collisionPoints[],
-            final Vector2 finalPosition1, final Vector2 finalPosition2,
-            final Vector2 normalDirection, final Vector2 tangentialDirection)
+    public CollisionInfo(final Pair<RigidBody, RigidBody> collidingBodies,
+                         final ArrayList<Vector2> collisionManifold,
+                         final float PENETRATION_DEPTH,
+                         final Vector2 normalDirection)
     {
-        time = collisionTime;
-        collPoints = new Vector2[4];//new Vector2[collisionPoints.length];
-        //System.arraycopy(collisionPoints, 0, collPoints, 0, collisionPoints.length);
-        p1 = finalPosition1;
-        p2 = finalPosition2;
+        manifold = collisionManifold;
         normal = normalDirection;
-        tangential = tangentialDirection;
+        depth = PENETRATION_DEPTH;
+        bodies = collidingBodies;
+    }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Manifold: ");
+        sb.append(manifold);
+        sb.append("\nNormal: ");
+        sb.append(normal);
+        sb.append("\nDepth: ");
+        sb.append(depth);
+        return sb.toString();
     }
 }

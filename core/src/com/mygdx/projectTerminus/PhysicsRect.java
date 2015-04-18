@@ -185,14 +185,15 @@ public class PhysicsRect extends RigidBody
             currentForces ^= TURNING_LEFT_FORCE;
     }
 
-    private float determineMomentOfIntertia()
+    @Override
+    public float getMomentOfInertia()
     {
-        float momentOfInertia = 0;
+        float moi = 0;
         float Icm = (float)((mass * ((float)Math.pow(width, 2) + (float)Math.pow(height, 2))) / 12.0);
         float H = (float)(Math.sqrt(Math.pow(position.x - COM.x,2) + Math.pow(position.y - COM.y,2)));
         float I = Icm + (float)(mass * Math.pow(H, 2));
 
-        momentOfInertia += I;
+        moi += I;
 
         for (PhysicsRect rect : childRects)
         {
@@ -200,9 +201,9 @@ public class PhysicsRect extends RigidBody
             H = (float)(Math.sqrt(Math.pow(rect.position.x - COM.x,2) + Math.pow(rect.position.y - COM.y,2)));
             I = Icm + (float)(rect.mass * Math.pow(H, 2));
 
-            momentOfInertia += I;
+            moi += I;
         }
-        return momentOfInertia;
+        return moi;
     }
 
     private float determineAngularAcceleration(float I)
@@ -323,7 +324,7 @@ public class PhysicsRect extends RigidBody
 
         Vector2 acceleration = new Vector2(force.x/totalMass, force.y/totalMass);
 
-        float momentOfInertia = determineMomentOfIntertia();
+        float momentOfInertia = getMomentOfInertia();
         this.momentOfInertia = momentOfInertia;
 
         float angularAcceleration = determineAngularAcceleration(momentOfInertia);
@@ -388,7 +389,7 @@ public class PhysicsRect extends RigidBody
     }
     
     @Override
-    public Vector2 com()
+    public Vector2 getCentreOfMass()
     {
         return COM;
     }

@@ -216,6 +216,90 @@ public class ProjectTerminus implements Screen
         }
         return collisionInfo;
     }
+
+    // clips the line segment points v1, v2
+    // if they are past o along n
+    ArrayList<Vector2> clip(Vector2 v1, Vector2 v2, Vector2 n, double o)
+    {
+        ArrayList<Vector2> cp = new ArrayList<Vector2>();
+        double d1 = n.dot(v1) - o;
+        double d2 = n.dot(v2) - o;
+        // if either point is past o along n
+        // then we can keep the point
+        if (d1 >= 0.0) cp.add(v1);
+        if (d2 >= 0.0) cp.add(v2);
+        // finally we need to check if they
+        // are on opposing sides so that we can
+        // compute the correct point
+        if (d1 * d2 < 0.0) {
+            // if they are on different sides of the
+            // offset, d1 and d2 will be a (+) * (-)
+            // and will yield a (-) and therefore be
+            // less than zero
+            // get the vector for the edge we are clipping
+            Vector2 e = new Vector2(v2.x - v1.x, v2.y - v1.y);
+            // compute the location along e
+            double u = d1 / (d1 - d2);
+            e.x *= u;
+            e.y *= u;
+            e.add(v1);
+            // add the point
+            cp.add(e);
+        }
+
+        return cp;
+    }
+
+    private ArrayList<Vector2> findCollisonPoints(Vector2 normal, Pair<Vector2, Vector2> edge1, Pair<Vector2, Vector2> edge2)
+    {
+        Pair<Vector2, Vector2> refEdge, incEdge;
+        Vector2 edge1Vector = new Vector2(edge1.getRight().x - edge1.getLeft().x, edge1.getRight().y - edge1.getLeft().y);
+        Vector2 edge2Vector = new Vector2(edge2.getRight().x - edge2.getLeft().x, edge2.getRight().y - edge2.getLeft().y);
+        Boolean flip = false;
+
+        // determine reference and incident edges
+        if (Math.abs(edge1Vector.dot(normal)) <= Math.abs(edge2Vector.dot(normal)))
+        {
+            refEdge = edge1;
+            incEdge = edge2;
+        }
+        else
+        {
+            incEdge = edge1;
+            refEdge = edge2;
+            flip = true;
+        }
+
+        Vector2 refVector = new Vector2(refEdge.getRight().x - refEdge.getLeft().x, refEdge.getRight().y - refEdge.getLeft().y);
+        refVector.nor();
+
+        double offset1 = refVector.dot(refEdge.getLeft());
+        // clip incident edge by the first vertex of the reference edge
+        ArrayList<Vector2> clippedPoints = clip(incEdge.getLeft(), incEdge.getRight(), refVector, offset1);
+        if (clippedPoints.size() < 2) return null; // failure
+
+        double offset2 = refVector.dot(refEdge.getRight());
+        // clip incident edge by the second vertex of reference edge in opposite direction
+        clippedPoints = clip(clippedPoints.get(0), clippedPoints.get(1), new Vector2(-refVector.x, -refVector.y), -offset2);
+        if (clippedPoints.size() < 2) return null; // failure
+
+        // clip points past the reference edge along the reference edge's normal
+        Vector2 refEdgeNormal = new Vector2(-refVector.y, refVector.x);
+        if (flip) refEdgeNormal.scl(-1);
+
+        double offset3 = refEdgeNormal.dot(refEdge.getRight());
+
+        if (refEdgeNormal.dot(clippedPoints.get(0)) - offset3 < 0.0)
+        {
+            clippedPoints.remove(0);
+        }
+        if (refEdgeNormal.dot(clippedPoints.get(1)) - offset3 < 0.0)
+        {
+            clippedPoints.remove(1);
+        }
+
+        return clippedPoints;
+    }
     
     private Pair<Vector2, Vector2> getBestEdge(Vector2 normal, RigidBody rect)
     {

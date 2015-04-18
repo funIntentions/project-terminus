@@ -21,6 +21,8 @@ public class ProjectTerminus implements Screen
     private final Color eBoxHitColor = new Color(255.f, 0.f, 0.f, 1.f);
     private Color eBoxCurrentColor = eBoxUnmolestedColor;
     
+    private ArrayList<Pair<Vector2, Vector2>> collidingEdges = new ArrayList<Pair<Vector2, Vector2>>();
+    
     final Game game;
     private OrthographicCamera camera;
     private ShapeRenderer shapeRenderer;
@@ -214,6 +216,10 @@ public class ProjectTerminus implements Screen
                 
                 CollisionInfo c = new CollisionInfo(collPair, collisionPoints, minTranslation, axes[minAxisIdx]);
                 collisionInfo.add(i, c);
+                
+                collidingEdges = new ArrayList<Pair<Vector2, Vector2>>();
+                collidingEdges.add(bestEdge1);
+                collidingEdges.add(bestEdge2);
             }
         }
         return collisionInfo;
@@ -290,15 +296,12 @@ public class ProjectTerminus implements Screen
         if (flip) refEdgeNormal.scl(-1);
 
         double offset3 = refEdgeNormal.dot(refEdge.getRight());
-        Vector2 point = clippedPoints.get(0);
-        Vector2 point2 = clippedPoints.get(1);
-
-        if (refEdgeNormal.dot(point) - offset3 < 0.0)
-            clippedPoints.remove(point);
         
-        if (refEdgeNormal.dot(point2) - offset3 < 0.0)
-            clippedPoints.remove(point2);
-
+        for(Vector2 point : clippedPoints)
+        {
+            if (refEdgeNormal.dot(point) - offset3 < 0.0)
+                clippedPoints.remove(point);
+        }
         return clippedPoints;
     }
     
@@ -519,7 +522,7 @@ public class ProjectTerminus implements Screen
                             elasticBox.sideLen, elasticBox.sideLen);
         shapeRenderer.rotate(0, 0, 1, -elasticBox.rotation);
         shapeRenderer.translate(-elasticBox.position.x, -elasticBox.position.y, 0.f);
-
+        
         // Draw the force arrow if a force is currently being applied
         if (car.isForceOn(car.BACKWARD_FORCE))
         {
@@ -570,6 +573,17 @@ public class ProjectTerminus implements Screen
         }
 
         shapeRenderer.end();
+        
+        for(Pair<Vector2, Vector2> edge: collidingEdges)
+        {
+            Vector2 p1 = edge.getLeft();
+            Vector2 p2 = edge.getRight();
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            shapeRenderer.setColor(1, 1, 0, 1);
+            shapeRenderer.line(p1.x, p1.y, p2.x, p2.y); // X Axis
+            shapeRenderer.end();
+        }
+        
         game.batch.begin();
 
         game.font.drawMultiLine(game.batch, "Car Position: " + car.position + "\n" +

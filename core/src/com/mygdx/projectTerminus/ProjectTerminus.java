@@ -99,6 +99,17 @@ public class ProjectTerminus implements Screen
     // pairs of possible collisions
     private ArrayList<Pair<RigidBody, RigidBody>> doBroadPhase()    
     {
+        for(int b1Index = 0; b1Index < bodies.size(); b1Index++) {
+            RigidBody body = bodies.get(b1Index);
+            if (Math.abs(body.position.y) > 400) {
+                body.velocity.y *= -1;
+            }
+
+            if (Math.abs(body.position.x) > 400) {
+                body.velocity.x *= -1;
+            }
+        }
+
         ArrayList<Pair<RigidBody, RigidBody>> possiblyColliding = new ArrayList<Pair<RigidBody, RigidBody>>();
         for(int b1Index = 0; b1Index < bodies.size(); b1Index++)
         {
@@ -552,13 +563,31 @@ public class ProjectTerminus implements Screen
         
         // Draw the elastic box
         shapeRenderer.setColor(eBoxCurrentColor);
-        shapeRenderer.translate(elasticBox.position.x, elasticBox.position.y, 0.f);
-        shapeRenderer.rotate(0, 0, 1, elasticBox.rotation);
-        shapeRenderer.rect(-elasticBox.sideLen / 2, -elasticBox.sideLen / 2,
-                            elasticBox.sideLen, elasticBox.sideLen);
-        shapeRenderer.rotate(0, 0, 1, -elasticBox.rotation);
-        shapeRenderer.translate(-elasticBox.position.x, -elasticBox.position.y, 0.f);
-        
+        for (RigidBody body : bodies)
+        {
+            if (body instanceof PhysicsBox)
+            {
+                PhysicsBox box = (PhysicsBox)body;
+                shapeRenderer.translate(box.position.x, box.position.y, 0.f);
+                shapeRenderer.rotate(0, 0, 1, box.rotation);
+                shapeRenderer.rect(-box.sideLen / 2, -box.sideLen / 2,
+                        box.sideLen, box.sideLen);
+                shapeRenderer.rotate(0, 0, 1, -box.rotation);
+                shapeRenderer.translate(-box.position.x, -box.position.y, 0.f);
+                shapeRenderer.end();
+                String elasticity = "1";
+                if (!box.isElastic)
+                {
+                    elasticity = "0";
+                }
+
+                game.batch.begin();
+                game.font.draw(game.batch, elasticity, box.position.x, box.position.y);
+                game.batch.end();
+            }
+        }
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled); // draw car
         // Draw the force arrow if a force is currently being applied
         if (car.isForceOn(car.BACKWARD_FORCE))
         {
@@ -636,6 +665,8 @@ public class ProjectTerminus implements Screen
                 "omega: " + car.angularVelocity + "\n" +
                 "alpha: " + car.angularAccel + "\n" +
                 "Radial: " + car.radial + "\n", 100, Gdx.graphics.getHeight()/2.2f);
+
+        game.font.draw(game.batch, "I'm a car.", car.position.x, car.position.y);
         game.batch.end();
 
         handleInput();

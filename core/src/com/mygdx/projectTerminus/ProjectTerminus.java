@@ -164,6 +164,7 @@ public class ProjectTerminus implements Screen
             axes[3].nor();
             
             int aIndex;
+            int minAxisIdx = 0;
             float minTranslation = Float.MAX_VALUE;
             for(aIndex = 0; aIndex < axes.length; aIndex++)
             {
@@ -181,11 +182,13 @@ public class ProjectTerminus implements Screen
                 {
                     translation = proj1.getRight() - proj2.getLeft();
                     if (translation < minTranslation) minTranslation = translation;
+                    minAxisIdx = aIndex;
                 }
                 else if(proj2.getRight() > proj1.getLeft())
                 {
                     translation = proj2.getRight() - proj1.getLeft();
                     if (translation < minTranslation) minTranslation = translation;
+                    minAxisIdx = aIndex;
                 }
                 
                 // If there's a gap between the projected vectors, then there was no collision
@@ -203,13 +206,8 @@ public class ProjectTerminus implements Screen
             {
                 // Determine the referent and incident faces
                 // We always assume that the referent face belongs to the first object in the collision pair
-                // Vector2 referentEdge = b1Edges[0];
-                // Vector2 incidentEdge = b2Edges[0];
-                // float mostPerpIncident = incidentEdge
-
-                /*
-                    for(
-                */
+                Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]), collPair.getLeft());
+                Pair<Vector2, Vector2> bestEdge2 = getBestEdge(new Vector2(axes[minAxisIdx]).scl(-1), collPair.getRight());
                 
                 // Add a dummy one for now; this is where we would get the manifold though
                 CollisionInfo c = new CollisionInfo(0.f, null, null, null, null, null);
@@ -217,6 +215,38 @@ public class ProjectTerminus implements Screen
             }
         }
         return collisionInfo;
+    }
+    
+    private Pair<Vector2, Vector2> getBestEdge(Vector2 normal, RigidBody rect)
+    {
+        Vector2[] vertices = rect.getVertices();
+        
+        // Find the vertex furthest along the normal
+        float maxProj = vertices[0].dot(normal);
+        int furthestIndex = 0;
+        for(int i = 1; i < vertices.length; i++)
+        {
+            float dot = vertices[i].dot(normal);
+            if(dot > maxProj)
+            {
+                maxProj = dot;
+                furthestIndex = i;
+            }
+        }
+        
+        // Get the left and right edges containing this vertex
+        Vector2 furthest = vertices[furthestIndex];
+        Vector2 leftNeighbour = furthestIndex == 0 ? vertices[vertices.length - 1] : vertices[furthestIndex - 1];
+        Vector2 rightNeighbour = furthestIndex == vertices.length - 1 ? vertices[0]: vertices[furthestIndex + 1];
+        
+        Vector2 leftEdge = new Vector2(furthest).sub(leftNeighbour).nor();
+        Vector2 rightEdge = new Vector2(furthest).sub(rightNeighbour).nor();
+        
+        float lDot = leftEdge.dot(normal);
+        float rDot = rightEdge.dot(normal);
+
+        return lDot < rDot ? new Pair<Vector2, Vector2>(leftNeighbour, furthest)
+                           : new Pair<Vector2, Vector2>(furthest, rightNeighbour);
     }
     
     /**

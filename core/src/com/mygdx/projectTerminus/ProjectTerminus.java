@@ -210,8 +210,8 @@ public class ProjectTerminus implements Screen
                 // We always assume that the referent face belongs to the first object in the collision pair
                 Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]), collPair.getLeft());
                 Pair<Vector2, Vector2> bestEdge2 = getBestEdge(new Vector2(axes[minAxisIdx]).scl(-1), collPair.getRight());
-                ArrayList<Vector2> collisionPoints = findCollisonPoints(axes[minAxisIdx], bestEdge1, bestEdge2);
-                
+                ArrayList<Vector2> collisionPoints = findCollisionPoints(axes[minAxisIdx], bestEdge1, bestEdge2);
+
                 CollisionInfo c = new CollisionInfo(collPair, collisionPoints, minTranslation, axes[minAxisIdx]);
                 collisionInfo.add(i, c);
             }
@@ -244,7 +244,7 @@ public class ProjectTerminus implements Screen
             double u = d1 / (d1 - d2);
             e.x *= u;
             e.y *= u;
-            e.add(v1);
+            e = e.add(v1);
             // add the point
             cp.add(e);
         }
@@ -252,7 +252,7 @@ public class ProjectTerminus implements Screen
         return cp;
     }
 
-    private ArrayList<Vector2> findCollisonPoints(Vector2 normal, Pair<Vector2, Vector2> edge1, Pair<Vector2, Vector2> edge2)
+    private ArrayList<Vector2> findCollisionPoints(Vector2 normal, Pair<Vector2, Vector2> edge1, Pair<Vector2, Vector2> edge2)
     {
         Pair<Vector2, Vector2> refEdge, incEdge;
         Vector2 edge1Vector = new Vector2(edge1.getRight().x - edge1.getLeft().x, edge1.getRight().y - edge1.getLeft().y);
@@ -290,14 +290,16 @@ public class ProjectTerminus implements Screen
         if (flip) refEdgeNormal.scl(-1);
 
         double offset3 = refEdgeNormal.dot(refEdge.getRight());
-        Vector2 point = clippedPoints.get(0);
-        Vector2 point2 = clippedPoints.get(1);
 
-        if (refEdgeNormal.dot(point) - offset3 < 0.0)
-            clippedPoints.remove(point);
-        
-        if (refEdgeNormal.dot(point2) - offset3 < 0.0)
-            clippedPoints.remove(point2);
+        ArrayList<Vector2> pointsToRemove = new ArrayList<Vector2>();
+
+        for (Vector2 point : clippedPoints)
+        {
+            if (refEdgeNormal.dot(point) - offset3 < 0.0)
+                pointsToRemove.add(point);
+        }
+
+        //clippedPoints.removeAll(pointsToRemove);
 
         return clippedPoints;
     }

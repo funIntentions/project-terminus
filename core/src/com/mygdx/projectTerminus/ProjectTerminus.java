@@ -21,7 +21,11 @@ public class ProjectTerminus implements Screen
     private final Color eBoxHitColor = new Color(255.f, 0.f, 0.f, 1.f);
     private Color eBoxCurrentColor = eBoxUnmolestedColor;
     
+    // Debug drawing shapes; get rid of these once it's fixed
     private ArrayList<Pair<Vector2, Vector2>> collidingEdges = new ArrayList<Pair<Vector2, Vector2>>();
+    private final Vector2 collPoint1 = new Vector2();
+    private final Vector2 collPoint2 = new Vector2();
+    private int whichPoint = 0;
     
     final Game game;
     private OrthographicCamera camera;
@@ -88,7 +92,6 @@ public class ProjectTerminus implements Screen
             // If it got to here, then it was hit
             // Wow is this ever bad code...
             eBoxCurrentColor = eBoxHitColor;
-            System.out.println("Collision Info: " + curInfo);
         }
     }
     
@@ -168,7 +171,7 @@ public class ProjectTerminus implements Screen
             for(aIndex = 0; aIndex < axes.length; aIndex++)
             {
                 Pair<Vector2, Vector2> minMax1 = new Pair<Vector2, Vector2>();
-                Pair<Vector2, Vector2> minMax2 = new Pair<Vector2, Vector2>();;
+                Pair<Vector2, Vector2> minMax2 = new Pair<Vector2, Vector2>();
                 
                 Pair<Float, Float> proj1 = new Pair<Float, Float>();
                 Pair<Float, Float> proj2 = new Pair<Float, Float>();
@@ -177,17 +180,16 @@ public class ProjectTerminus implements Screen
                 getMinMax(collPair.getRight(), axes[aIndex], minMax2, proj2);
 
                 float translation;
-                if (proj1.getRight() > proj2.getLeft())
+                if (proj1.getRight() > proj2.getLeft() ||
+                    proj2.getRight() > proj1.getLeft())
                 {
-                    translation = proj1.getRight() - proj2.getLeft();
-                    if (translation < minTranslation) minTranslation = translation;
-                    minAxisIdx = aIndex;
-                }
-                else if(proj2.getRight() > proj1.getLeft())
-                {
-                    translation = proj2.getRight() - proj1.getLeft();
-                    if (translation < minTranslation) minTranslation = translation;
-                    minAxisIdx = aIndex;
+                    translation = Math.min(proj1.getRight(), proj2.getRight()) -
+                                  Math.max(proj2.getLeft(), proj2.getLeft());                   
+                    if (translation < minTranslation)
+                    {
+                        minTranslation = translation;
+                        minAxisIdx = aIndex;
+                    }
                 }
                 
                 // If there's a gap between the projected vectors, then there was no collision
@@ -210,8 +212,15 @@ public class ProjectTerminus implements Screen
                 
                 // Determine the referent and incident faces
                 // We always assume that the referent face belongs to the first object in the collision pair
+                //System.out.print("Body 1: ");
+                whichPoint = 1;
                 Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]), collPair.getLeft());
+                
+                //System.out.print("Body 2: ");
+                whichPoint = 2;
                 Pair<Vector2, Vector2> bestEdge2 = getBestEdge(new Vector2(axes[minAxisIdx]).scl(-1), collPair.getRight());
+                
+                //System.out.println();
                 ArrayList<Vector2> collisionPoints = findCollisionPoints(axes[minAxisIdx], bestEdge1, bestEdge2);
 
                 CollisionInfo c = new CollisionInfo(collPair, collisionPoints, minTranslation, axes[minAxisIdx]);
@@ -336,6 +345,17 @@ public class ProjectTerminus implements Screen
         float lDot = leftEdge.dot(normal);
         float rDot = rightEdge.dot(normal);
 
+        //System.out.println("Normal: " + normal + ", lDot: " + lDot + ", rDot: " + rDot);
+        
+        if(whichPoint == 1){
+            collPoint1.x = furthest.x;
+            collPoint1.y = furthest.y;
+        }
+        else if(whichPoint == 2) {
+            collPoint2.x = furthest.x;
+            collPoint2.y = furthest.y;
+        }
+        
         return lDot < rDot ? new Pair<Vector2, Vector2>(leftNeighbour, furthest)
                            : new Pair<Vector2, Vector2>(furthest, rightNeighbour);
     }
@@ -376,6 +396,8 @@ public class ProjectTerminus implements Screen
                 maxProj = dot;
             }
         }
+        
+        System.out.println("Min point: " + minPoint + ", Max point: " + maxPoint);
         
         pointsOut.setLeft(minPoint);
         pointsOut.setRight(maxPoint);
@@ -516,6 +538,17 @@ public class ProjectTerminus implements Screen
 
         shapeRenderer.setColor(COMcolour);
         shapeRenderer.circle(car.COM.x, car.COM.y, 4);
+        
+        if(whichPoint != 0)
+        {
+            // Draw the selected point for the first shape
+            shapeRenderer.setColor(new Color(0, 255.f, 0, 1));
+            shapeRenderer.circle(collPoint1.x, collPoint1.y, 4);
+
+            // Draw the selected point for the second shape
+            shapeRenderer.setColor(new Color(255.f, 255.f, 0, 1));
+            shapeRenderer.circle(collPoint2.x, collPoint1.y, 4);
+        }
         
         // Draw the elastic box
         shapeRenderer.setColor(eBoxCurrentColor);

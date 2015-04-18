@@ -204,6 +204,12 @@ public class ProjectTerminus implements Screen
             // there was a collision
             if(aIndex == axes.length)
             {
+                // Flip the normal if it doesn't point in the direction of the collision
+                Vector2 obj1To2 = new Vector2(collPair.getRight().position)
+                                             .sub(collPair.getLeft().position).nor();
+                if(obj1To2.dot(axes[minAxisIdx]) < 0)
+                        axes[minAxisIdx].scl(-1);
+                
                 // Determine the referent and incident faces
                 // We always assume that the referent face belongs to the first object in the collision pair
                 Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]), collPair.getLeft());

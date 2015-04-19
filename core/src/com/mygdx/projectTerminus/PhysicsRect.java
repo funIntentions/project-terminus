@@ -60,9 +60,9 @@ public class PhysicsRect extends RigidBody
         
         initialVerts = new Vector2[4];
         initialVerts[0] = new Vector2(-width / 2, height / 2);
-        initialVerts[1] = new Vector2(width / 2, height / 2);
+        initialVerts[1] = new Vector2(-width / 2, -height / 2);
         initialVerts[2] = new Vector2(width / 2, -height / 2);
-        initialVerts[3] = new Vector2(-width / 2, -height / 2);
+        initialVerts[3] = new Vector2(width / 2, height / 2);
         
         vertices = new Vector2[4];
         edges = new ArrayList<Pair<Vector2, Vector2>>(initialVerts.length);

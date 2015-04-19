@@ -221,6 +221,8 @@ public class ProjectTerminus implements Screen
                 if(obj1To2.dot(axes[minAxisIdx]) < 0)
                         axes[minAxisIdx].scl(-1);
                 
+                System.out.println("Axis: " + axes[minAxisIdx]);
+                
                 // Determine the referent and incident faces
                 // We always assume that the referent face belongs to the first object in the collision pair
                 //System.out.print("Body 1: ");
@@ -350,21 +352,22 @@ public class ProjectTerminus implements Screen
         Vector2 leftNeighbour = furthestIndex == 0 ? vertices[vertices.length - 1] : vertices[furthestIndex - 1];
         Vector2 rightNeighbour = furthestIndex == vertices.length - 1 ? vertices[0]: vertices[furthestIndex + 1];
         
-        Vector2 leftEdge = new Vector2(furthest).sub(leftNeighbour).nor();
-        Vector2 rightEdge = new Vector2(furthest).sub(rightNeighbour).nor();
+        Vector2 leftEdge = (new Vector2(furthest).sub(leftNeighbour)).nor();
+        Vector2 rightEdge = (new Vector2(furthest).sub(rightNeighbour)).nor();
         
         float lDot = leftEdge.dot(normal);
         float rDot = rightEdge.dot(normal);
 
-        //System.out.println("Normal: " + normal + ", lDot: " + lDot + ", rDot: " + rDot);
-        
+        // 
         if(whichPoint == 1){
             collPoint1.x = furthest.x;
             collPoint1.y = furthest.y;
+            System.out.println("Coll point 1: " + collPoint1);
         }
         else if(whichPoint == 2) {
             collPoint2.x = furthest.x;
             collPoint2.y = furthest.y;
+            System.out.println("Coll point 2: " + collPoint2);
         }
         
         return lDot < rDot ? new Pair<Vector2, Vector2>(leftNeighbour, furthest)
@@ -407,8 +410,6 @@ public class ProjectTerminus implements Screen
                 maxProj = dot;
             }
         }
-        
-        System.out.println("Min point: " + minPoint + ", Max point: " + maxPoint);
         
         pointsOut.setLeft(minPoint);
         pointsOut.setRight(maxPoint);

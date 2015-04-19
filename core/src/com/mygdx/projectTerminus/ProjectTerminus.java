@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import java.util.ArrayList;
+import java.util.Vector;
 
 /**
  * Created by Dan on 4/5/2015.
@@ -35,9 +36,8 @@ public class ProjectTerminus implements Screen
     private Color COMcolour;
     private Color arrowColour;
     private Vector2 arrowPosition;
-    private Boolean running;
     private float time = 0;
-    private Boolean accelerating;
+    private Boolean collided;
 
     public ProjectTerminus(Game game)
     {
@@ -58,8 +58,7 @@ public class ProjectTerminus implements Screen
 
         arrowPosition = new Vector2(0,0);
 
-        running = false;
-        accelerating = true;
+        collided = false;
 
         car.addChild(driver);
         car.addChild(tank);
@@ -89,6 +88,35 @@ public class ProjectTerminus implements Screen
             // If it got to here, then it was hit
             // Wow is this ever bad code...
             eBoxCurrentColor = eBoxHitColor;
+        }
+        
+        // Handle any actual reported collisions
+        for(CollisionInfo ci : nPhaseResults)
+        {
+            float e = 0;
+            int numBoxes = 0;
+            RigidBody b1 = ci.bodies.getLeft();
+            RigidBody b2 = ci.bodies.getRight();
+            
+            // Use this incredible instanceof operator to determine the correct
+            // elasticity
+            if (b1 instanceof PhysicsBox && b2 instanceof PhysicsBox)
+            {
+                e += (((PhysicsBox) b1).isElastic) ? 1 : 0;
+                e += (((PhysicsBox) b2).isElastic) ? 1 : 0;
+                e /= 2;
+            }
+            else if (b1 instanceof PhysicsBox && b2 instanceof PhysicsRect)
+            {
+                if (((PhysicsBox)b1).isElastic) e = 1.0f;
+            }
+            else if (b1 instanceof PhysicsBox && b2 instanceof PhysicsRect)
+            {
+                if (((PhysicsBox)b1).isElastic) e = 1.0f;
+            }
+            
+            // Apply the appropriate collision response
+            collide(e, ci);
         }
     }
     
@@ -231,10 +259,15 @@ public class ProjectTerminus implements Screen
 
                 CollisionInfo c = new CollisionInfo(collPair, collisionPoints, minTranslation, axes[minAxisIdx]);
                 collisionInfo.add(i, c);
+
+                float e = 0;
+
+                System.out.println("Points: " + collisionPoints);
                 
-                collidingEdges = new ArrayList<Pair<Vector2, Vector2>>();
-                collidingEdges.add(bestEdge1);
-                collidingEdges.add(bestEdge2);
+//                
+//                collidingEdges = new ArrayList<Pair<Vector2, Vector2>>();
+//                collidingEdges.add(bestEdge1);
+//                collidingEdges.add(bestEdge2);
             }
         }
         return collisionInfo;
@@ -289,6 +322,7 @@ public class ProjectTerminus implements Screen
             refEdge = edge1;
             incEdge = edge2;
             refMaxPoint = e1MaxPoint;
+            System.out.println("no flip");
         }
         else
         {
@@ -296,6 +330,7 @@ public class ProjectTerminus implements Screen
             refEdge = edge2;
             refMaxPoint = e2MaxPoint;
             flip = true;
+            System.out.println("flip");
         }
 
         Vector2 refVector = new Vector2(refEdge.getRight().x - refEdge.getLeft().x, refEdge.getRight().y - refEdge.getLeft().y);
@@ -414,90 +449,108 @@ public class ProjectTerminus implements Screen
         projectionsOut.setRight(maxProj);
     }
     
-    private void collide(final RigidBody b1, final RigidBody b2,
-                         final float elasticity)
+    /**
+     * Given an elasticity and collision information, appropriately model the
+     * collision response.
+     * @param elasticity    The elasticity of the collision.
+     * @param collisionInfo An object containing the penetration depth, normal and
+     *                      bodies involved in the collision.
+     */
+    private void collide(final float elasticity, final CollisionInfo collisionInfo)
     {
-//        Vector3 unitNormal = new Vector3(1, 0, 0);
-//        Vector3 P = new Vector3(0,0,0);
-//        P.x = circle2.position.x - 20;
-//        P.y = circle1.position.y + ((circle2.position.y - circle1.position.y)/2.0f);
-//
-//        Vector3 r1 = new Vector3((P.x - circle1.position.x), (P.y - circle1.position.y), 0);
-//        Vector3 r2 = new Vector3((P.x - circle2.position.x), (P.y - circle2.position.y), 0);
-//
-//        initialOrbital1 = r1.y * circle1.mass * circle1.velocity.x;
-//        initialOrbital2 = r2.y * circle2.mass * circle2.velocity.x;
-//
-//        float momentOfInertia1 = (circle1.mass * (float)(Math.pow(40, 2) + Math.pow(40, 2)))/12.0f;
-//        float momentOfInertia2 = (circle2.mass * (float)(Math.pow(40, 2) + Math.pow(40, 2)))/ 12.0f;
-//
-//        float vR = circle1.velocity.x - circle2.velocity.x;
-//
-//        // calculate impulse J
-//        float coefficient = -vR * (e + 1.0f);
-//        float inverseMasses = (1.0f/circle1.mass) + (1.0f/circle2.mass);
-//
-//        Vector3 elementOne = new Vector3(r1);
-//        elementOne = elementOne.crs(unitNormal);
-//        elementOne.x /= momentOfInertia1;
-//        elementOne.y /= momentOfInertia1;
-//        elementOne.z /= momentOfInertia1;
-//        elementOne = elementOne.crs(r1);
-//        float componentOne = unitNormal.dot(elementOne); //Vector3.dot(unitNormal.x, unitNormal.y, unitNormal.z, elementOne.x, elementOne.y, elementOne.z);
-//
-//        Vector3 elementTwo = new Vector3(r2);
-//        elementTwo = elementTwo.crs(unitNormal);
-//        elementTwo.x /= momentOfInertia2;
-//        elementTwo.y /= momentOfInertia2;
-//        elementTwo.z /= momentOfInertia2;
-//        elementTwo = elementTwo.crs(r2);
-//        float componentTwo = unitNormal.dot(elementTwo); //Vector3.dot(unitNormal.x, unitNormal.y, unitNormal.z, elementTwo.x, elementTwo.y, elementTwo.z);
-//
-//        float denominator = inverseMasses + componentOne + componentTwo;
-//
-//        float J = coefficient * (1.0f/denominator);
-//
-//        float Uf = J/circle1.mass + circle1.velocity.x;
-//        float Vf = -J/circle2.mass + circle2.velocity.x;
-//
-//        pix = (circle1.mass * initialVelocityU.x) + (circle2.mass * initialVelocityV.x);
-//        pfx = (circle1.mass * circle1.velocity.x) + (circle2.mass * circle2.velocity.x);
-//        pfy = (circle1.mass * circle1.velocity.y) + (circle2.mass * circle2.velocity.y);
-//
-//        impulse = J;
-//        colisionCount++;
-//
-//        circle1.velocity.x = Uf * unitNormal.x;
-//        circle1.velocity.y = Uf * unitNormal.y;
-//        circle2.velocity.x = Vf * unitNormal.x;
-//        circle2.velocity.y = Vf * unitNormal.y;
-//
-//        Vector3 angularVelocity1 = new Vector3(unitNormal);
-//        angularVelocity1.x = angularVelocity1.x * J;
-//        angularVelocity1.y = angularVelocity1.y * J;
-//        angularVelocity1.z = angularVelocity1.z * J;
-//        angularVelocity1 = (new Vector3(r1)).crs(angularVelocity1);
-//        rect1W = angularVelocity1.z * (1.0f/momentOfInertia1) * (float)(180.0f/Math.PI);
-//
-//        Vector3 angularVelocity2 = new Vector3(unitNormal);
-//        angularVelocity2.x = angularVelocity2.x * -J;
-//        angularVelocity2.y = angularVelocity2.y * -J;
-//        angularVelocity2.z = angularVelocity2.z * -J;
-//        angularVelocity2 = (new Vector3(r2)).crs(angularVelocity2);
-//        rect2W = angularVelocity2.z * (1.0f/momentOfInertia2) * (float)(180.0f/Math.PI);
-//
-//        circle1KEf = (0.5f) * circle1.mass * (float)Math.pow(circle1.velocity.x, 2);
-//        circle2KEf = (0.5f) * circle2.mass * (float)Math.pow(circle2.velocity.x, 2);
-//
-//        rect1RKEf = (0.5f) * momentOfInertia1 * (float)Math.pow(rect1W * (Math.PI/180.0f), 2);
-//        rect2RKEf = (0.5f) * momentOfInertia2 * (float)Math.pow(rect2W * (Math.PI/180.0f), 2);
-//
-//        finalOrbital1 = r1.y * circle1.mass * circle1.velocity.len();
-//        finalOrbital2 = r2.y * circle2.mass * circle2.velocity.len();
-//        finalRotational1 = momentOfInertia1 * (float)(rect1W * (Math.PI/180.0f));
-//        finalRotational2 = momentOfInertia2 * (float)(rect2W * (Math.PI/180.0f));
-//
-//        collided = true;
+        // Check if we even have enough info to respond to the collision
+        if (collisionInfo.manifold == null || collisionInfo.manifold.isEmpty())
+        {
+            return;
+        }
+
+        RigidBody b1 = collisionInfo.bodies.getLeft();
+        RigidBody b2 = collisionInfo.bodies.getRight();
+        
+        Vector3 unitNormal = new Vector3(collisionInfo.normal.x, collisionInfo.normal.y, 0);
+        float b1Mass = b1.mass;
+        float b2Mass = b2.mass;
+
+        if (b1 instanceof PhysicsRect)
+        {
+            b1Mass = ((PhysicsRect)b1).getTotalMass();
+        }
+        else if (b2 instanceof PhysicsRect)
+        {
+            b2Mass = ((PhysicsRect)b2).getTotalMass();
+        }
+
+        Vector2 P = collisionInfo.manifold.get(0);
+
+        Vector3 r1 = new Vector3((P.x - b1.position.x), (P.y - b1.position.y), 0);
+        Vector3 r2 = new Vector3((P.x - b2.position.x), (P.y - b2.position.y), 0);
+
+        float momentOfInertia1 = b1.getMomentOfInertia();
+        float momentOfInertia2 = b2.getMomentOfInertia();
+
+        Vector2 vR = new Vector2();
+        vR.x = b1.velocity.x - b2.velocity.x;
+        vR.y = b1.velocity.y - b2.velocity.y;
+
+        // calculate impulse J
+        Vector2 coefficient = new Vector2();
+        coefficient.x = -vR.x * (elasticity + 1.0f);
+        coefficient.y = -vR.y * (elasticity + 1.0f);
+
+        float inverseMasses = (1.0f/b1Mass) + (1.0f/b2Mass);
+
+        Vector3 elementOne = new Vector3(r1);
+        elementOne = elementOne.crs(unitNormal);
+        elementOne.x /= momentOfInertia1;
+        elementOne.y /= momentOfInertia1;
+        elementOne.z /= momentOfInertia1;
+        elementOne = elementOne.crs(r1);
+        float componentOne = unitNormal.dot(elementOne); //Vector3.dot(unitNormal.x, unitNormal.y, unitNormal.z, elementOne.x, elementOne.y, elementOne.z);
+
+        Vector3 elementTwo = new Vector3(r2);
+        elementTwo = elementTwo.crs(unitNormal);
+        elementTwo.x /= momentOfInertia2;
+        elementTwo.y /= momentOfInertia2;
+        elementTwo.z /= momentOfInertia2;
+        elementTwo = elementTwo.crs(r2);
+        float componentTwo = unitNormal.dot(elementTwo); //Vector3.dot(unitNormal.x, unitNormal.y, unitNormal.z, elementTwo.x, elementTwo.y, elementTwo.z);
+
+        float denominator = inverseMasses + componentOne + componentTwo;
+
+        Vector2 J = new Vector2();
+        J.x = coefficient.x * (1.0f/denominator);
+        J.y = coefficient.y * (1.0f/denominator);
+
+        Vector2 Uf = new Vector2();
+        Uf.x = J.x/b1Mass + b1.velocity.x;
+        Uf.y = J.y/b1Mass + b1.velocity.y;
+
+        Vector2 Vf = new Vector2();
+        Vf.x = -J.x/b2Mass + b2.velocity.x;
+        Vf.y = -J.y/b2Mass + b2.velocity.y;
+
+        b1.velocity.x = Uf.x * unitNormal.x;
+        b1.velocity.y = Uf.y * unitNormal.y;
+        b2.velocity.x = Vf.x * unitNormal.x;
+        b2.velocity.y = Vf.y * unitNormal.y;
+
+        Vector3 angularVelocity1 = new Vector3(unitNormal);
+        angularVelocity1.x = angularVelocity1.x * J.x;
+        angularVelocity1.y = angularVelocity1.y * J.y;
+        angularVelocity1.z = 0; //= angularVelocity1.z * J;
+        angularVelocity1 = (new Vector3(r1)).crs(angularVelocity1);
+        //b1.angularVelocity = angularVelocity1.z;
+        //rect1W = angularVelocity1.z * (1.0f/momentOfInertia1) * (float)(180.0f/Math.PI);
+
+        Vector3 angularVelocity2 = new Vector3(unitNormal);
+        angularVelocity2.x = angularVelocity2.x * -J.x;
+        angularVelocity2.y = angularVelocity2.y * -J.y;
+        angularVelocity2.z = 0;//angularVelocity2.z * -J;
+        angularVelocity2 = (new Vector3(r2)).crs(angularVelocity2);
+        //b2.angularVelocity = angularVelocity2.z; 1/dragCoefficient * (angularForce - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (angularForce - dragCoefficient * angularVelocity));
+        //rect2W = angularVelocity2.z * (1.0f/momentOfInertia2) * (float)(180.0f/Math.PI);
+
+        collided = true;
     }
     
     @Override
@@ -660,10 +713,6 @@ public class ProjectTerminus implements Screen
 
     public void handleInput()
     {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE))
-        {
-            running = !running;
-        }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.W))
         {
@@ -737,8 +786,6 @@ public class ProjectTerminus implements Screen
             driver.reset(-240, 20, 40, 40, new Color(0.5f, 0f, 0f, 1f), 0, 0);
             tank.reset(-380, 0, 40, 80, new Color(0f, 0.5f, 0f, 1f), 0, 0);
             time = 0;
-            running = false;
-            accelerating = true;
         }
     }
 

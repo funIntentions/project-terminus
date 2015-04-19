@@ -133,6 +133,16 @@ public class PhysicsRect extends RigidBody
         childRects.add(rect);
     }
 
+    public float getTotalMass()
+    {
+        float totalMass = this.mass;
+        for (PhysicsRect child : childRects)
+        {
+            totalMass += child.mass;
+        }
+
+        return totalMass;
+    }
 
     public void centralForceOn(Boolean forward)
     {

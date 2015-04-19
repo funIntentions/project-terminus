@@ -225,16 +225,19 @@ public class ProjectTerminus implements Screen
                 
                 // Determine the referent and incident faces
                 // We always assume that the referent face belongs to the first object in the collision pair
-                //System.out.print("Body 1: ");
                 whichPoint = 1;
-                Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]), collPair.getLeft());
+                Vector2 e1Max = new Vector2();
+                Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]),
+                                                    collPair.getLeft(), e1Max);
                 
-                //System.out.print("Body 2: ");
                 whichPoint = 2;
-                Pair<Vector2, Vector2> bestEdge2 = getBestEdge(new Vector2(axes[minAxisIdx]).scl(-1), collPair.getRight());
-                
-                //System.out.println();
-                ArrayList<Vector2> collisionPoints = findCollisionPoints(axes[minAxisIdx], bestEdge1, bestEdge2);
+                Vector2 e2Max = new Vector2();
+                Pair<Vector2, Vector2> bestEdge2 = getBestEdge(new Vector2(axes[minAxisIdx]).scl(-1),
+                                                    collPair.getRight(), e2Max);
+
+                ArrayList<Vector2> collisionPoints = findCollisionPoints(axes[minAxisIdx],
+                                                        bestEdge1, bestEdge2,
+                                                        e1Max, e2Max);
 
                 CollisionInfo c = new CollisionInfo(collPair, collisionPoints, minTranslation, axes[minAxisIdx]);
                 collisionInfo.add(i, c);
@@ -280,9 +283,12 @@ public class ProjectTerminus implements Screen
         return cp;
     }
 
-    private ArrayList<Vector2> findCollisionPoints(Vector2 normal, Pair<Vector2, Vector2> edge1, Pair<Vector2, Vector2> edge2)
+    private ArrayList<Vector2> findCollisionPoints(Vector2 normal,
+                                                   Pair<Vector2, Vector2> edge1, Pair<Vector2, Vector2> edge2,
+                                                   Vector2 e1MaxPoint, Vector2 e2MaxPoint)
     {
         Pair<Vector2, Vector2> refEdge, incEdge;
+        Vector2 refMaxPoint;
         Vector2 edge1Vector = new Vector2(edge1.getRight().x - edge1.getLeft().x, edge1.getRight().y - edge1.getLeft().y);
         Vector2 edge2Vector = new Vector2(edge2.getRight().x - edge2.getLeft().x, edge2.getRight().y - edge2.getLeft().y);
         Boolean flip = false;
@@ -292,11 +298,13 @@ public class ProjectTerminus implements Screen
         {
             refEdge = edge1;
             incEdge = edge2;
+            refMaxPoint = e1MaxPoint;
         }
         else
         {
             incEdge = edge1;
             refEdge = edge2;
+            refMaxPoint = e2MaxPoint;
             flip = true;
         }
 
@@ -317,7 +325,7 @@ public class ProjectTerminus implements Screen
         Vector2 refEdgeNormal = new Vector2(-refVector.y, refVector.x);
         if (flip) refEdgeNormal.scl(-1);
 
-        double offset3 = refEdgeNormal.dot(refEdge.getRight());
+        double offset3 = refEdgeNormal.dot(refMaxPoint);
         ArrayList<Vector2> pointsToRemove = new ArrayList<Vector2>();
 
         for (Vector2 point : clippedPoints)
@@ -326,11 +334,19 @@ public class ProjectTerminus implements Screen
                 pointsToRemove.add(point);
         }
 
-        //clippedPoints.removeAll(pointsToRemove);
+        clippedPoints.removeAll(pointsToRemove);
+        System.out.println("Manifold: " + clippedPoints);
         return clippedPoints;
     }
     
-    private Pair<Vector2, Vector2> getBestEdge(Vector2 normal, RigidBody rect)
+    /**
+     * Gets the edge most perpendicular to the given normal.
+     * @param normal      The normal against which to compare the edge.
+     * @param rect        The rectangle containing the edges.
+     * @param furthestOut A Vector2 in which to store the best furthest point. 
+     * @return The best edge.
+     */
+    private Pair<Vector2, Vector2> getBestEdge(Vector2 normal, RigidBody rect, Vector2 furthestOut)
     {
         Vector2[] vertices = rect.getVertices();
         
@@ -362,13 +378,14 @@ public class ProjectTerminus implements Screen
         if(whichPoint == 1){
             collPoint1.x = furthest.x;
             collPoint1.y = furthest.y;
-            System.out.println("Coll point 1: " + collPoint1);
         }
         else if(whichPoint == 2) {
             collPoint2.x = furthest.x;
             collPoint2.y = furthest.y;
-            System.out.println("Coll point 2: " + collPoint2);
         }
+        
+        furthestOut.x = furthest.x;
+        furthestOut.y = furthest.y;
         
         return lDot < rDot ? new Pair<Vector2, Vector2>(leftNeighbour, furthest)
                            : new Pair<Vector2, Vector2>(furthest, rightNeighbour);

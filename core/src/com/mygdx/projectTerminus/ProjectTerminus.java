@@ -23,9 +23,6 @@ public class ProjectTerminus implements Screen
     
     // Debug drawing shapes; get rid of these once it's fixed
     private ArrayList<Pair<Vector2, Vector2>> collidingEdges = new ArrayList<Pair<Vector2, Vector2>>();
-    private final Vector2 collPoint1 = new Vector2();
-    private final Vector2 collPoint2 = new Vector2();
-    private int whichPoint = 0;
     
     final Game game;
     private OrthographicCamera camera;
@@ -154,26 +151,26 @@ public class ProjectTerminus implements Screen
             // Calculate the edge vector and then find the normal (flip the slope and change the sign)
             axes[0] = new Vector2(b1Vertices[1]).sub(b1Vertices[0]);
             x = axes[0].x;
-            axes[0].x = -axes[0].y;
-            axes[0].y = x;
+            axes[0].x = axes[0].y;
+            axes[0].y = -x;
             axes[0].nor();
             
             axes[1] = new Vector2(b1Vertices[2]).sub(b1Vertices[1]);
             x = axes[1].x;
-            axes[1].x = -axes[1].y;
-            axes[1].y = x;
+            axes[1].x = axes[1].y;
+            axes[1].y = -x;
             axes[1].nor();
             
             axes[2] = new Vector2(b2Vertices[1]).sub(b2Vertices[0]);
             x = axes[2].x;
-            axes[2].x = -axes[2].y;
-            axes[2].y = x;
+            axes[2].x = axes[2].y;
+            axes[2].y = -x;
             axes[2].nor();
             
             axes[3] = new Vector2(b2Vertices[2]).sub(b2Vertices[1]);
             x = axes[3].x;
-            axes[3].x = -axes[3].y;
-            axes[3].y = x;
+            axes[3].x = axes[3].y;
+            axes[3].y = -x;
             axes[3].nor();
             
             int aIndex;
@@ -190,24 +187,22 @@ public class ProjectTerminus implements Screen
                 getMinMax(collPair.getLeft(), axes[aIndex], minMax1, proj1);
                 getMinMax(collPair.getRight(), axes[aIndex], minMax2, proj2);
 
-                float translation;
-                if (proj1.getRight() > proj2.getLeft() ||
-                    proj2.getRight() > proj1.getLeft())
-                {
-                    translation = Math.min(proj1.getRight(), proj2.getRight()) -
-                                  Math.max(proj2.getLeft(), proj2.getLeft());                   
-                    if (translation < minTranslation)
-                    {
-                        minTranslation = translation;
-                        minAxisIdx = aIndex;
-                    }
-                }
-                
                 // If there's a gap between the projected vectors, then there was no collision
                 if(proj1.getRight() < proj2.getLeft() || 
                    proj2.getRight() < proj1.getLeft())
                 {
                     break;
+                }
+                
+                // There was no gap, so check how far the penetration is on this
+                // axis
+                float translation;
+                translation = Math.min(proj1.getRight(), proj2.getRight()) -
+                              Math.max(proj1.getLeft(), proj2.getLeft());                    
+                if (translation < minTranslation)
+                {
+                    minTranslation = translation;
+                    minAxisIdx = aIndex;
                 }
             }
             
@@ -221,16 +216,11 @@ public class ProjectTerminus implements Screen
                 if(obj1To2.dot(axes[minAxisIdx]) < 0)
                         axes[minAxisIdx].scl(-1);
                 
-                System.out.println("Axis: " + axes[minAxisIdx]);
-                
                 // Determine the referent and incident faces
                 // We always assume that the referent face belongs to the first object in the collision pair
-                whichPoint = 1;
                 Vector2 e1Max = new Vector2();
                 Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]),
                                                     collPair.getLeft(), e1Max);
-                
-                whichPoint = 2;
                 Vector2 e2Max = new Vector2();
                 Pair<Vector2, Vector2> bestEdge2 = getBestEdge(new Vector2(axes[minAxisIdx]).scl(-1),
                                                     collPair.getRight(), e2Max);
@@ -322,7 +312,7 @@ public class ProjectTerminus implements Screen
         if (clippedPoints.size() < 2) return null; // failure
 
         // clip points past the reference edge along the reference edge's normal
-        Vector2 refEdgeNormal = new Vector2(-refVector.y, refVector.x);
+        Vector2 refEdgeNormal = new Vector2(refVector.y, -refVector.x);
         if (flip) refEdgeNormal.scl(-1);
 
         double offset3 = refEdgeNormal.dot(refMaxPoint);
@@ -335,7 +325,6 @@ public class ProjectTerminus implements Screen
         }
 
         clippedPoints.removeAll(pointsToRemove);
-        System.out.println("Manifold: " + clippedPoints);
         return clippedPoints;
     }
     
@@ -374,16 +363,6 @@ public class ProjectTerminus implements Screen
         float lDot = leftEdge.dot(normal);
         float rDot = rightEdge.dot(normal);
 
-        // 
-        if(whichPoint == 1){
-            collPoint1.x = furthest.x;
-            collPoint1.y = furthest.y;
-        }
-        else if(whichPoint == 2) {
-            collPoint2.x = furthest.x;
-            collPoint2.y = furthest.y;
-        }
-        
         furthestOut.x = furthest.x;
         furthestOut.y = furthest.y;
         
@@ -567,17 +546,6 @@ public class ProjectTerminus implements Screen
 
         shapeRenderer.setColor(COMcolour);
         shapeRenderer.circle(car.COM.x, car.COM.y, 4);
-        
-        if(whichPoint != 0)
-        {
-            // Draw the selected point for the first shape
-            shapeRenderer.setColor(new Color(0, 255.f, 0, 1));
-            shapeRenderer.circle(collPoint1.x, collPoint1.y, 4);
-
-            // Draw the selected point for the second shape
-            shapeRenderer.setColor(new Color(255.f, 255.f, 0, 1));
-            shapeRenderer.circle(collPoint2.x, collPoint1.y, 4);
-        }
         
         // Draw the elastic box
         shapeRenderer.setColor(eBoxCurrentColor);

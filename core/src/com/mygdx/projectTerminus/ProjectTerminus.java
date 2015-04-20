@@ -631,13 +631,13 @@ public class ProjectTerminus implements Screen
         shapeRenderer.circle(car.COM.x, car.COM.y, 4);
         shapeRenderer.end();
         // Draw the elastic box
-        
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(eBoxCurrentColor);
+
         for (RigidBody body : bodies)
         {
             if (body instanceof PhysicsBox)
             {
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+                shapeRenderer.setColor(eBoxCurrentColor);
                 PhysicsBox box = (PhysicsBox)body;
                 shapeRenderer.translate(box.getPosition().x, box.getPosition().y, 0.f);
                 shapeRenderer.rotate(0, 0, 1, box.rotation);
@@ -645,7 +645,10 @@ public class ProjectTerminus implements Screen
                         box.sideLen, box.sideLen);
                 shapeRenderer.rotate(0, 0, 1, -box.rotation);
                 shapeRenderer.translate(-box.getPosition().x, -box.getPosition().y, 0.f);
+                shapeRenderer.end();
+
                 String elasticity = "1";
+
                 if (!box.isElastic)
                 {
                     elasticity = "0";
@@ -656,7 +659,7 @@ public class ProjectTerminus implements Screen
                 game.batch.end();
             }
         }
-        shapeRenderer.end();
+
         
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled); // draw car
         // Draw the force arrow if a force is currently being applied

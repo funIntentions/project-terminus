@@ -467,7 +467,7 @@ public class ProjectTerminus implements Screen
         RigidBody b1 = collisionInfo.bodies.getLeft();
         RigidBody b2 = collisionInfo.bodies.getRight();
         
-        Vector3 unitNormal = new Vector3(collisionInfo.normal.x, collisionInfo.normal.y, 0);
+        Vector3 unitNormal = new Vector3(-collisionInfo.normal.x, -collisionInfo.normal.y, 0);
         float b1Mass = b1.mass;
         float b2Mass = b2.mass;
 
@@ -535,16 +535,16 @@ public class ProjectTerminus implements Screen
         b2.velocity.y = Vf.y * unitNormal.y;
 
         Vector3 angularVelocity1 = new Vector3(unitNormal);
-        angularVelocity1.x = angularVelocity1.x * J.x;
-        angularVelocity1.y = angularVelocity1.y * J.y;
+        angularVelocity1.x = angularVelocity1.x * -J.x;
+        angularVelocity1.y = angularVelocity1.y * -J.y;
         angularVelocity1.z = 0; //= angularVelocity1.z * J;
         angularVelocity1 = (new Vector3(r1)).crs(angularVelocity1);
         b1.angularVelocity = angularVelocity1.z * (1.0f/momentOfInertia1);
         //rect1W = angularVelocity1.z * (1.0f/momentOfInertia1) * (float)(180.0f/Math.PI);
 
         Vector3 angularVelocity2 = new Vector3(unitNormal);
-        angularVelocity2.x = angularVelocity2.x * -J.x;
-        angularVelocity2.y = angularVelocity2.y * -J.y;
+        angularVelocity2.x = angularVelocity2.x * J.x;
+        angularVelocity2.y = angularVelocity2.y * J.y;
         angularVelocity2.z = 0;//angularVelocity2.z * -J;
         angularVelocity2 = (new Vector3(r2)).crs(angularVelocity2);
         b2.angularVelocity = angularVelocity2.z * time * (1.0f/momentOfInertia2);

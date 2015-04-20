@@ -310,7 +310,6 @@ public class PhysicsRect extends RigidBody
         forcePosition.add(position);
         force.rotate(rotation);
 
-
         // Calculate COM
         float totalMass = mass;
         COM.x = position.x * mass;
@@ -333,9 +332,7 @@ public class PhysicsRect extends RigidBody
         radial.y = forcePosition.y - COM.y;
 
         Vector2 acceleration = new Vector2(force.x/totalMass, force.y/totalMass);
-
-        float momentOfInertia = getMomentOfInertia();
-        this.momentOfInertia = momentOfInertia;
+        this.momentOfInertia = getMomentOfInertia();
 
         float angularAcceleration = determineAngularAcceleration(momentOfInertia);
 
@@ -377,8 +374,9 @@ public class PhysicsRect extends RigidBody
         forcePosition.rotate(rotationThisFrame);
         forcePosition.add(COM);
 
-        velocity.x = 1/dragCoefficient * (force.x - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (force.x - dragCoefficient * velocity.x));
-        velocity.y = 1/dragCoefficient * (force.y - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (force.y - dragCoefficient * velocity.y));
+        final float eToCoeff = (float)Math.pow(Math.E, -dragCoefficient * time/totalMass);
+        velocity.x = 1/dragCoefficient * (force.x - eToCoeff * (force.x - dragCoefficient * velocity.x));
+        velocity.y = 1/dragCoefficient * (force.y - eToCoeff * (force.y - dragCoefficient * velocity.y));
         
         updateVertices();
     }

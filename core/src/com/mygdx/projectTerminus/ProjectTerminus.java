@@ -10,7 +10,6 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import java.util.ArrayList;
-import java.util.Vector;
 
 /**
  * Created by Dan on 4/5/2015.
@@ -68,10 +67,10 @@ public class ProjectTerminus implements Screen
         bodies.add(elasticBox);
                 
         // Create the walls of the stage and add them to the bodies ArrayList
-        walls.add(new PhysicsBox(800, new Vector2(-400, 0), 0, 0, new Vector2(), 0, false));
-        walls.add(new PhysicsBox(800, new Vector2(400, 0), 0, 0, new Vector2(), 0, false));
-        walls.add(new PhysicsBox(800, new Vector2(0, -400), 0, 0, new Vector2(), 0, false));
-        walls.add(new PhysicsBox(800, new Vector2(0, 400), 0, 0, new Vector2(), 0, false));
+        walls.add(new PhysicsBox(800, new Vector2(-800, 0), 0, 0, new Vector2(), 0, false));
+        walls.add(new PhysicsBox(800, new Vector2(800, 0), 0, 0, new Vector2(), 0, false));
+        walls.add(new PhysicsBox(800, new Vector2(0, -800), 0, 0, new Vector2(), 0, false));
+        walls.add(new PhysicsBox(800, new Vector2(0, 800), 0, 0, new Vector2(), 0, false));
         
         bodies.addAll(walls);
     }
@@ -96,7 +95,13 @@ public class ProjectTerminus implements Screen
                 // Determine the object that's colliding with the wall and test for
                 // collision
                 RigidBody affected = walls.contains(b1) ? b2 : b1;
-                if(doNarrowPhase(collPair, null, true)) affected.velocity.scl(-1);
+                RigidBody wall = affected == b1 ? b2 : b1;
+                if(doNarrowPhase(collPair, null, true))
+                {
+                    // Could do the full check, but fuck that
+                    if(Math.abs(wall.position.x) > 10) affected.velocity.x *= -1;
+                    else affected.velocity.y *= -1;
+                }
                 continue;
             }
             
@@ -603,8 +608,10 @@ public class ProjectTerminus implements Screen
 
         shapeRenderer.setColor(COMcolour);
         shapeRenderer.circle(car.COM.x, car.COM.y, 4);
-        
+        shapeRenderer.end();
         // Draw the elastic box
+        
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(eBoxCurrentColor);
         for (RigidBody body : bodies)
         {
@@ -629,7 +636,7 @@ public class ProjectTerminus implements Screen
             }
         }
         shapeRenderer.end();
-
+        
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled); // draw car
         // Draw the force arrow if a force is currently being applied
         if (car.isForceOn(car.BACKWARD_FORCE))

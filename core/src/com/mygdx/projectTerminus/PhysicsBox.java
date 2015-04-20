@@ -88,9 +88,9 @@ public class PhysicsBox extends RigidBody {
         position.x += velocity.x * deltaTime;
         position.y += velocity.y * deltaTime;
 
-        System.out.println(deltaTime);
-        System.out.println(velocity);
-        System.out.println(position);
+//        System.out.println(deltaTime);
+//        System.out.println(velocity);
+//        System.out.println(position);
 
         updateVertices();
     }

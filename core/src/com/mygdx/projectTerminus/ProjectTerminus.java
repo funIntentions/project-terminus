@@ -26,15 +26,16 @@ public class ProjectTerminus implements Screen
     private ArrayList<Pair<Vector2, Vector2>> collidingEdges = new ArrayList<Pair<Vector2, Vector2>>();
     
     final Game game;
-    private OrthographicCamera camera;
-    private ShapeRenderer shapeRenderer;
-    private PhysicsRect car;
-    private PhysicsRect driver;
-    private PhysicsRect tank;
-    private PhysicsBox elasticBox;
-    private ArrayList<RigidBody> bodies;
-    private Color COMcolour;
-    private Color arrowColour;
+    private final OrthographicCamera camera;
+    private final ShapeRenderer shapeRenderer;
+    private final PhysicsRect car;
+    private final PhysicsRect driver;
+    private final PhysicsRect tank;
+    private final PhysicsBox elasticBox;
+    private final ArrayList<RigidBody> walls = new ArrayList<RigidBody>(4);
+    private final ArrayList<RigidBody> bodies;
+    private final Color COMcolour;
+    private final Color arrowColour;
     private Vector2 arrowPosition;
     private float time = 0;
     private Boolean collided;
@@ -69,6 +70,14 @@ public class ProjectTerminus implements Screen
         bodies = new ArrayList<RigidBody>();
         bodies.add(car);
         bodies.add(elasticBox);
+                
+        // Create the walls of the stage and add them to the bodies ArrayList
+        walls.add(new PhysicsBox(800, new Vector2(-400, 0), 0, 0, new Vector2(), 0, false));
+        walls.add(new PhysicsBox(800, new Vector2(400, 0), 0, 0, new Vector2(), 0, false));
+        walls.add(new PhysicsBox(800, new Vector2(0, -400), 0, 0, new Vector2(), 0, false));
+        walls.add(new PhysicsBox(800, new Vector2(0, 400), 0, 0, new Vector2(), 0, false));
+        
+        bodies.addAll(walls);
     }
 
     /**
@@ -76,72 +85,72 @@ public class ProjectTerminus implements Screen
      */
     private void handleCollisions()
     {
-        ArrayList<Pair<RigidBody, RigidBody>> bPhaseResults = doBroadPhase();
-        ArrayList<CollisionInfo> nPhaseResults = doNarrowPhase(bPhaseResults);
-        
-        for(int i = 0; i < nPhaseResults.size(); i++)
-        {
-            CollisionInfo curInfo = nPhaseResults.get(i);
-            
-            // If we're not looking at the box or there wsa no collision, continue
-            if(!(curInfo.bodies.getLeft() == elasticBox || curInfo.bodies.getRight() == elasticBox)) continue;            
-            // If it got to here, then it was hit
-            // Wow is this ever bad code...
-            eBoxCurrentColor = eBoxHitColor;
-        }
+        ArrayList<Pair<RigidBody, RigidBody>> bPhaseResults = doBroadPhase(bodies);
         
         // Handle any actual reported collisions
-        for(CollisionInfo ci : nPhaseResults)
-        {
-            float e = 0;
-            int numBoxes = 0;
-            RigidBody b1 = ci.bodies.getLeft();
-            RigidBody b2 = ci.bodies.getRight();
-            
-            // Use this incredible instanceof operator to determine the correct
-            // elasticity
-            if (b1 instanceof PhysicsBox && b2 instanceof PhysicsBox)
+        for(Pair<RigidBody, RigidBody> collPair : bPhaseResults)
+        {            
+            // Check if either object in the collision is a wall; if so, we only
+            // want to check if they collided
+            if(walls.contains(collPair.getRight()) || walls.contains(collPair.getLeft()))
             {
-                e += (((PhysicsBox) b1).isElastic) ? 1 : 0;
-                e += (((PhysicsBox) b2).isElastic) ? 1 : 0;
-                e /= 2;
-            }
-            else if (b1 instanceof PhysicsBox && b2 instanceof PhysicsRect)
-            {
-                if (((PhysicsBox)b1).isElastic) e = 1.0f;
-            }
-            else if (b1 instanceof PhysicsBox && b2 instanceof PhysicsRect)
-            {
-                if (((PhysicsBox)b1).isElastic) e = 1.0f;
+                RigidBody b1 = collPair.getLeft();
+                RigidBody b2 = collPair.getRight();
+                
+                // Determine the object that's colliding with the wall and test for
+                // collision
+                RigidBody affected = walls.contains(b1) ? b2 : b1;
+                if(doNarrowPhase(collPair, null, true)) affected.velocity.scl(-1);
+                continue;
             }
             
-            // Apply the appropriate collision response
-            collide(e, ci);
+            // Check if the two objects are actually colliding and respond appropriately if so
+            CollisionInfo ci = new CollisionInfo();
+            if(doNarrowPhase(collPair, ci, false))
+            {
+                float elasticity = 0;
+                RigidBody b1 = collPair.getLeft();
+                RigidBody b2 = collPair.getRight();
+
+                // Use this incredible instanceof operator to determine the correct
+                // elasticity
+                if (b1 instanceof PhysicsBox && b2 instanceof PhysicsBox)
+                {
+                    elasticity += (((PhysicsBox) b1).isElastic) ? 1 : 0;
+                    elasticity += (((PhysicsBox) b2).isElastic) ? 1 : 0;
+                    elasticity /= 2;
+                }
+                else if (b1 instanceof PhysicsBox && b2 instanceof PhysicsRect)
+                {
+                    if (((PhysicsBox)b1).isElastic) elasticity = 1.0f;
+                }
+                else if (b1 instanceof PhysicsBox && b2 instanceof PhysicsRect)
+                {
+                    if (((PhysicsBox)b1).isElastic) elasticity = 1.0f;
+                }
+
+                // Apply the appropriate collision response
+                collide(elasticity, ci);
+            }
         }
     }
     
-    // Does broadphase collision detection and returns an arraylist containing
-    // pairs of possible collisions
-    private ArrayList<Pair<RigidBody, RigidBody>> doBroadPhase()    
+    /**
+     * Does broadphase collision detection on the given list of of rigid bodies.
+     * @param rBodies The list of bodies to check.
+     * @return A list of pairs of rigid bodies that might be colliding.
+     */
+    private ArrayList<Pair<RigidBody, RigidBody>> doBroadPhase(ArrayList<RigidBody> rBodies)    
     {
-        for(int b1Index = 0; b1Index < bodies.size(); b1Index++) {
-            RigidBody body = bodies.get(b1Index);
-            if (Math.abs(body.position.y) > 400) {
-                body.velocity.y *= -1;
-            }
-
-            if (Math.abs(body.position.x) > 400) {
-                body.velocity.x *= -1;
-            }
-        }
-
+        // Check every body against every other body
+        // If their bounding circles overlap, add them to a list for closer inspection
         ArrayList<Pair<RigidBody, RigidBody>> possiblyColliding = new ArrayList<Pair<RigidBody, RigidBody>>();
-        for(int b1Index = 0; b1Index < bodies.size(); b1Index++)
+        for(int b1Index = 0; b1Index < rBodies.size(); b1Index++)
         {
-            RigidBody body1 = bodies.get(b1Index);
-            for(int b2Index = b1Index + 1; b2Index < bodies.size(); b2Index++)
+            RigidBody body1 = rBodies.get(b1Index);
+            for(int b2Index = b1Index + 1; b2Index < rBodies.size(); b2Index++)
             {
-                RigidBody body2 = bodies.get(b2Index);
+                RigidBody body2 = rBodies.get(b2Index);
                 double dist = body1.position.dst(body2.position);
                 if(dist < (body1.getBoundingCircleRadius() + body2.getBoundingCircleRadius()))
                 {
@@ -150,127 +159,124 @@ public class ProjectTerminus implements Screen
                 }
             }
         }
-        
+
         return possiblyColliding;
     }
     
     /**
-     * Checks more thoroughly whether the given pairs collided.
-     * @param bodies The bodies that may be colliding (as identified during
-     * broadphase).
+     * Checks whether the two given bodies are actually in collision.
+     * 
+     * Note that this currently only actually checks rectangles; the algorithm
+     * could be used to check other polygons by removing the axis optimisation.
+     * 
+     * @param bodies     The bodies that may be colliding (as identified during
+     *                   broadphase).
+     * @param ciOut      A CollisionInfo object to hold the collision information.
+     * @param detectOnly Whether the actually get the collision information or to
+     *                   only check that the objects collided.
+     * 
      */
-    private ArrayList<CollisionInfo> doNarrowPhase(ArrayList<Pair<RigidBody, RigidBody>> bodies)
+    private boolean doNarrowPhase(Pair<RigidBody, RigidBody> bodies, CollisionInfo ciOut,
+                                    boolean detectOnly)
     {
-        // Will contain the information about collisions for each pair, if any
-        final ArrayList<CollisionInfo> collisionInfo = new ArrayList<CollisionInfo>();
-        final int numPairs = bodies.size();
-        
-        for(int i = 0; i < numPairs; i++)
+        Vector2[] b1Vertices = bodies.getLeft().getVertices();
+        Vector2[] b2Vertices = bodies.getRight().getVertices();
+
+        // Use the separating axis theorem to check for collisions
+        // We know that we're using boxes, so we can get away with checking
+        // just 4 axes
+        float x;
+        Vector2 axes[] = new Vector2[4];
+        // Calculate the edge vector and then find the normal (flip the slope and change the sign)
+        axes[0] = new Vector2(b1Vertices[1]).sub(b1Vertices[0]);
+        x = axes[0].x;
+        axes[0].x = axes[0].y;
+        axes[0].y = -x;
+        axes[0].nor();
+
+        axes[1] = new Vector2(b1Vertices[2]).sub(b1Vertices[1]);
+        x = axes[1].x;
+        axes[1].x = axes[1].y;
+        axes[1].y = -x;
+        axes[1].nor();
+
+        axes[2] = new Vector2(b2Vertices[1]).sub(b2Vertices[0]);
+        x = axes[2].x;
+        axes[2].x = axes[2].y;
+        axes[2].y = -x;
+        axes[2].nor();
+
+        axes[3] = new Vector2(b2Vertices[2]).sub(b2Vertices[1]);
+        x = axes[3].x;
+        axes[3].x = axes[3].y;
+        axes[3].y = -x;
+        axes[3].nor();
+
+        int aIndex;
+        int minAxisIdx = 0;
+        float minTranslation = Float.MAX_VALUE;
+        for(aIndex = 0; aIndex < axes.length; aIndex++)
         {
-            Pair<RigidBody, RigidBody> collPair = bodies.get(i);
-            Vector2[] b1Vertices = collPair.getLeft().getVertices();
-            Vector2[] b2Vertices = collPair.getRight().getVertices();
-            
-            // Use the separating axis theorem to check for collisions
-            // We know that we're using boxes, so we can get away with checking
-            // just 4 axes
-            float x;
-            Vector2 axes[] = new Vector2[4];
-            // Calculate the edge vector and then find the normal (flip the slope and change the sign)
-            axes[0] = new Vector2(b1Vertices[1]).sub(b1Vertices[0]);
-            x = axes[0].x;
-            axes[0].x = axes[0].y;
-            axes[0].y = -x;
-            axes[0].nor();
-            
-            axes[1] = new Vector2(b1Vertices[2]).sub(b1Vertices[1]);
-            x = axes[1].x;
-            axes[1].x = axes[1].y;
-            axes[1].y = -x;
-            axes[1].nor();
-            
-            axes[2] = new Vector2(b2Vertices[1]).sub(b2Vertices[0]);
-            x = axes[2].x;
-            axes[2].x = axes[2].y;
-            axes[2].y = -x;
-            axes[2].nor();
-            
-            axes[3] = new Vector2(b2Vertices[2]).sub(b2Vertices[1]);
-            x = axes[3].x;
-            axes[3].x = axes[3].y;
-            axes[3].y = -x;
-            axes[3].nor();
-            
-            int aIndex;
-            int minAxisIdx = 0;
-            float minTranslation = Float.MAX_VALUE;
-            for(aIndex = 0; aIndex < axes.length; aIndex++)
-            {
-                Pair<Vector2, Vector2> minMax1 = new Pair<Vector2, Vector2>();
-                Pair<Vector2, Vector2> minMax2 = new Pair<Vector2, Vector2>();
-                
-                Pair<Float, Float> proj1 = new Pair<Float, Float>();
-                Pair<Float, Float> proj2 = new Pair<Float, Float>();
-                
-                getMinMax(collPair.getLeft(), axes[aIndex], minMax1, proj1);
-                getMinMax(collPair.getRight(), axes[aIndex], minMax2, proj2);
+            Pair<Vector2, Vector2> minMax1 = new Pair<Vector2, Vector2>();
+            Pair<Vector2, Vector2> minMax2 = new Pair<Vector2, Vector2>();
 
-                // If there's a gap between the projected vectors, then there was no collision
-                if(proj1.getRight() < proj2.getLeft() || 
-                   proj2.getRight() < proj1.getLeft())
-                {
-                    break;
-                }
-                
-                // There was no gap, so check how far the penetration is on this
-                // axis
-                float translation;
-                translation = Math.min(proj1.getRight(), proj2.getRight()) -
-                              Math.max(proj1.getLeft(), proj2.getLeft());                    
-                if (translation < minTranslation)
-                {
-                    minTranslation = translation;
-                    minAxisIdx = aIndex;
-                }
+            Pair<Float, Float> proj1 = new Pair<Float, Float>();
+            Pair<Float, Float> proj2 = new Pair<Float, Float>();
+
+            getMinMax(bodies.getLeft(), axes[aIndex], minMax1, proj1);
+            getMinMax(bodies.getRight(), axes[aIndex], minMax2, proj2);
+
+            // If there's a gap between the projected vectors, then there was no collision
+            // so return false
+            if(proj1.getRight() < proj2.getLeft() || 
+               proj2.getRight() < proj1.getLeft())
+            {
+                return false;
             }
-            
-            // If we looped through every axis and none of them had a gap, then
-            // there was a collision
-            if(aIndex == axes.length)
+
+            // There was no gap, so check how far the penetration is on this
+            // axis
+            float translation;
+            translation = Math.min(proj1.getRight(), proj2.getRight()) -
+                          Math.max(proj1.getLeft(), proj2.getLeft());                    
+            if (translation < minTranslation)
             {
-                // Flip the normal if it doesn't point in the direction of the collision
-                Vector2 obj1To2 = new Vector2(collPair.getRight().position)
-                                             .sub(collPair.getLeft().position).nor();
-                if(obj1To2.dot(axes[minAxisIdx]) < 0)
-                        axes[minAxisIdx].scl(-1);
-                
-                // Determine the referent and incident faces
-                // We always assume that the referent face belongs to the first object in the collision pair
-                Vector2 e1Max = new Vector2();
-                Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]),
-                                                    collPair.getLeft(), e1Max);
-                Vector2 e2Max = new Vector2();
-                Pair<Vector2, Vector2> bestEdge2 = getBestEdge(new Vector2(axes[minAxisIdx]).scl(-1),
-                                                    collPair.getRight(), e2Max);
-
-                ArrayList<Vector2> collisionPoints = findCollisionPoints(axes[minAxisIdx],
-                                                        bestEdge1, bestEdge2,
-                                                        e1Max, e2Max);
-
-                CollisionInfo c = new CollisionInfo(collPair, collisionPoints, minTranslation, axes[minAxisIdx]);
-                collisionInfo.add(i, c);
-
-                float e = 0;
-
-                System.out.println("Points: " + collisionPoints);
-                
-//                
-//                collidingEdges = new ArrayList<Pair<Vector2, Vector2>>();
-//                collidingEdges.add(bestEdge1);
-//                collidingEdges.add(bestEdge2);
+                minTranslation = translation;
+                minAxisIdx = aIndex;
             }
         }
-        return collisionInfo;
+
+        // If we didn't specify to only detect collisions, fill in the given
+        // CollisionInfo object
+        if(!detectOnly)
+        {
+            // Flip the normal such that it always points from the first to the
+            // second body in collision
+            Vector2 obj1To2 = new Vector2(bodies.getRight().position)
+                                         .sub(bodies.getLeft().position).nor();
+            if(obj1To2.dot(axes[minAxisIdx]) < 0)
+                    axes[minAxisIdx].scl(-1);
+
+            // Determine the referent and incident faces
+            Vector2 e1Max = new Vector2();
+            Pair<Vector2, Vector2> bestEdge1 = getBestEdge(new Vector2(axes[minAxisIdx]),
+                                                bodies.getLeft(), e1Max);
+            Vector2 e2Max = new Vector2();
+            Pair<Vector2, Vector2> bestEdge2 = getBestEdge(new Vector2(axes[minAxisIdx]).scl(-1),
+                                                bodies.getRight(), e2Max);
+
+            // Clip all of the points outside the overlapping range between the
+            // two objects and return these as the collision points
+            ArrayList<Vector2> collisionPoints = findCollisionPoints(axes[minAxisIdx],
+                                                    bestEdge1, bestEdge2,
+                                                    e1Max, e2Max);
+
+            ciOut.bodies = bodies;
+            ciOut.manifold = collisionPoints;
+            ciOut.depth = minTranslation;
+            ciOut.normal = axes[minAxisIdx];
+        }
+        return true;
     }
 
     // clips the line segment points v1, v2
@@ -613,7 +619,6 @@ public class ProjectTerminus implements Screen
                         box.sideLen, box.sideLen);
                 shapeRenderer.rotate(0, 0, 1, -box.rotation);
                 shapeRenderer.translate(-box.position.x, -box.position.y, 0.f);
-                shapeRenderer.end();
                 String elasticity = "1";
                 if (!box.isElastic)
                 {
@@ -625,6 +630,7 @@ public class ProjectTerminus implements Screen
                 game.batch.end();
             }
         }
+        shapeRenderer.end();
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled); // draw car
         // Draw the force arrow if a force is currently being applied

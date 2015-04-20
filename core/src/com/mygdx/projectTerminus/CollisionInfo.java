@@ -15,11 +15,23 @@ import java.util.ArrayList;
  * @author Shane
  */
 public class CollisionInfo {
-    public final ArrayList<Vector2> manifold;
-    public final float depth;
-    public final Vector2 normal;
-    public final Pair<RigidBody, RigidBody> bodies;
+    public ArrayList<Vector2> manifold;
+    public float depth;
+    public Vector2 normal;
+    public Pair<RigidBody, RigidBody> bodies;
     
+    /**
+     * Default constructor.
+     */
+    public CollisionInfo(){}
+    
+    /**
+     * Constructs a new CollisionInfo object with the specified information.
+     * @param collidingBodies   The bodies in collision.
+     * @param collisionManifold The collection of points in the collision.
+     * @param PENETRATION_DEPTH The depth by which the bodies are overlapping.
+     * @param normalDirection   The direction of the normal in the collision.
+     */
     public CollisionInfo(final Pair<RigidBody, RigidBody> collidingBodies,
                          final ArrayList<Vector2> collisionManifold,
                          final float PENETRATION_DEPTH,

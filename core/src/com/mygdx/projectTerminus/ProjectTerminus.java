@@ -31,6 +31,7 @@ public class ProjectTerminus implements Screen
     private final PhysicsRect driver;
     private final PhysicsRect tank;
     private final PhysicsBox elasticBox;
+    private final PhysicsBox inelasticBox;
     private final ArrayList<RigidBody> walls = new ArrayList<RigidBody>(4);
     private final ArrayList<RigidBody> bodies;
     private final Color COMcolour;
@@ -61,10 +62,14 @@ public class ProjectTerminus implements Screen
                 
         elasticBox = new PhysicsBox(100.f, new Vector2(170, 0), 0, 50.f,
                                     new Vector2(), 0.f, true);
+
+        inelasticBox = new PhysicsBox(100.f, new Vector2(0, 170), 0, 50.f,
+                new Vector2(), 0.f, false);
         
         bodies = new ArrayList<RigidBody>();
         bodies.add(car);
         bodies.add(elasticBox);
+        bodies.add(inelasticBox);
                 
         // Create the walls of the stage and add them to the bodies ArrayList
         walls.add(new PhysicsBox(800, new Vector2(-800, 0), 0, 0, new Vector2(), 0, false));
@@ -572,8 +577,8 @@ public class ProjectTerminus implements Screen
         b2.velocity = vf2;
         
         // Calculate the final angular velocities
-        float omegaDiff1 = (new Vector3(impulseN.x, impulseN.y, 0).crs(r1).z / b1.getMomentOfInertia()) + b1.angularVelocity;
-        float omegaDiff2 = (new Vector3(impulseN.x, impulseN.y, 0).crs(r2).z / -b2.getMomentOfInertia()) + b2.angularVelocity;
+        float omegaDiff1 = (new Vector3(impulseN.x, impulseN.y, 0).crs(r1).z / b1.getMomentOfInertia());
+        float omegaDiff2 = (new Vector3(impulseN.x, impulseN.y, 0).crs(r2).z / -b2.getMomentOfInertia());
         
         b1.angularVelocity = omegaDiff1;
         b2.angularVelocity = omegaDiff2;

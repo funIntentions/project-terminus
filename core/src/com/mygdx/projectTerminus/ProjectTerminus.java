@@ -575,8 +575,8 @@ public class ProjectTerminus implements Screen
         float omegaDiff1 = (new Vector3(impulseN.x, impulseN.y, 0).crs(r1).z / b1.getMomentOfInertia()) + b1.angularVelocity;
         float omegaDiff2 = (new Vector3(impulseN.x, impulseN.y, 0).crs(r2).z / b2.getMomentOfInertia()) + b2.angularVelocity;
         
-        b1.angularVelocity += omegaDiff1;
-        b2.angularVelocity += omegaDiff2;
+        b1.angularVelocity = omegaDiff1;
+        b2.angularVelocity = omegaDiff2;
     }
     
     @Override

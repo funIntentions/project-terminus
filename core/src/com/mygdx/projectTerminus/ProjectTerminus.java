@@ -59,7 +59,7 @@ public class ProjectTerminus implements Screen
         car.addChild(driver);
         car.addChild(tank);
                 
-        elasticBox = new PhysicsBox(100.f, new Vector2(170, 0), 0, 500.f,
+        elasticBox = new PhysicsBox(100.f, new Vector2(170, 0), 0, 50.f,
                                     new Vector2(), 0.f, true);
         
         bodies = new ArrayList<RigidBody>();
@@ -149,9 +149,9 @@ public class ProjectTerminus implements Screen
                 {
                     if (((PhysicsBox)b1).isElastic) elasticity = 1.0f;
                 }
-                else if (b1 instanceof PhysicsBox && b2 instanceof PhysicsRect)
+                else if (b1 instanceof PhysicsRect && b2 instanceof PhysicsBox)
                 {
-                    if (((PhysicsBox)b1).isElastic) elasticity = 1.0f;
+                    if (((PhysicsBox)b2).isElastic) elasticity = 1.0f;
                 }
 
                 // Apply the appropriate collision response
@@ -543,82 +543,40 @@ public class ProjectTerminus implements Screen
             }
         }
         
-        Vector2 P = collisionInfo.manifold.get(0);
+        // Get the radial vectors
+        Vector2 collPoint = collisionInfo.manifold.get(0);
+        Vector3 p = new Vector3(collPoint.x, collPoint.y, 0);
+        Vector3 r1 = new Vector3(b1.position.x, b1.position.y, 0).sub(p);
+        Vector3 r2 = new Vector3(b2.position.x, b2.position.y, 0).sub(p);
+        
+        // Get some coefficients for the impulse calculation
+        Vector3 normalVec3 = new Vector3(collisionInfo.normal.x, collisionInfo.normal.y, 0);
+        float nDot1 = normalVec3.dot(new Vector3(r1).crs(normalVec3).scl(1 / b1.getMomentOfInertia()).crs(r1));
+        float nDot2 = normalVec3.dot(new Vector3(r2).crs(normalVec3).scl(1 / b2.getMomentOfInertia()).crs(r2));
+        float impulseDenominator = (1.f / b1Mass) + (1.f / b2Mass) + nDot1 + nDot2;
 
-        Vector3 r1 = new Vector3((P.x - b1.getPosition().x), (P.y - b1.getPosition().y), 0);
-        Vector3 r2 = new Vector3((P.x - b2.getPosition().x), (P.y - b2.getPosition().y), 0);
+        // Get the initial velocities in the normal direction
+        Vector2 v1N = new Vector2(collisionInfo.normal).scl(b1.velocity.dot(collisionInfo.normal));
+        Vector2 v2N = new Vector2(collisionInfo.normal).scl(b2.velocity.dot(collisionInfo.normal));
+       
+        // Get the relative velocity and the impulse (as well as the impulse in the normal direction)
+        Vector2 vRel = new Vector2(b1.velocity).sub(b2.velocity);
+        Vector2 impulse = new Vector2(vRel).scl(-(elasticity + 1) / impulseDenominator);
+        Vector2 impulseN = new Vector2(collisionInfo.normal).scl(impulse.dot(collisionInfo.normal));
 
-        float momentOfInertia1 = b1.getMomentOfInertia();
-        float momentOfInertia2 = b2.getMomentOfInertia();
-
-        Vector2 vR = new Vector2();
-        vR.x = b1.velocity.x - b2.velocity.x;
-        vR.y = b1.velocity.y - b2.velocity.y;
-
-        // Determine the variables for the impulse calculation
-        Vector2 coefficient = new Vector2();
-        coefficient.x = -vR.x * (elasticity + 1.0f);
-        coefficient.y = -vR.y * (elasticity + 1.0f);
-
-        float inverseMasses = (1.0f/b1Mass) + (1.0f/b2Mass);
-
-        Vector3 elementOne = new Vector3(r1);
-        elementOne = elementOne.crs(unitNormal);
-        elementOne.x /= momentOfInertia1;
-        elementOne.y /= momentOfInertia1;
-        elementOne.z /= momentOfInertia1;
-        elementOne = elementOne.crs(r1);
-        float componentOne = unitNormal.dot(elementOne); //Vector3.dot(unitNormal.x, unitNormal.y, unitNormal.z, elementOne.x, elementOne.y, elementOne.z);
-
-        Vector3 elementTwo = new Vector3(r2);
-        elementTwo = elementTwo.crs(unitNormal);
-        elementTwo.x /= momentOfInertia2;
-        elementTwo.y /= momentOfInertia2;
-        elementTwo.z /= momentOfInertia2;
-        elementTwo = elementTwo.crs(r2);
-        float componentTwo = unitNormal.dot(elementTwo); //Vector3.dot(unitNormal.x, unitNormal.y, unitNormal.z, elementTwo.x, elementTwo.y, elementTwo.z);
-
-        float denominator = inverseMasses + componentOne + componentTwo;
-
-        // Calculate the impulse applied to the objects
-        Vector2 J = new Vector2();
-        J.x = coefficient.x * (1.0f/denominator);
-        J.y = coefficient.y * (1.0f/denominator);
-
-        // Calculate the first object's final velocity after the impulse in the
-        // direction of the normal
-        Vector2 Uf = new Vector2();
-        Uf.x = -J.x/b1Mass + b1.velocity.x;
-        Uf.y = -J.y/b1Mass + b1.velocity.y;
-
-        // Calculate the second object's velocity after the impulse in the
-        // direction of the normal
-        Vector2 Vf = new Vector2();
-        Vf.x = J.x/b2Mass + b2.velocity.x;
-        Vf.y = J.y/b2Mass + b2.velocity.y;
-
-        b1.velocity.x = Uf.x * unitNormal.x;
-        b1.velocity.y = Uf.y * unitNormal.y;
-        b2.velocity.x = Vf.x * unitNormal.x;
-        b2.velocity.y = Vf.y * unitNormal.y;
-
-        // Calculate the first object's angular velocity after the collision
-        Vector3 angularVelocity1 = new Vector3(unitNormal);
-        angularVelocity1.x = angularVelocity1.x * -J.x;
-        angularVelocity1.y = angularVelocity1.y * -J.y;
-        angularVelocity1.z = 0; //= angularVelocity1.z * J;
-        angularVelocity1 = (new Vector3(r1)).crs(angularVelocity1);
-        b1.angularVelocity = angularVelocity1.z * (1.0f/momentOfInertia1);
-        //rect1W = angularVelocity1.z * (1.0f/momentOfInertia1) * (float)(180.0f/Math.PI);
-
-        // Calculate the second object's angular velocity after the collision
-        Vector3 angularVelocity2 = new Vector3(unitNormal);
-        angularVelocity2.x = angularVelocity2.x * J.x;
-        angularVelocity2.y = angularVelocity2.y * J.y;
-        angularVelocity2.z = 0;//angularVelocity2.z * -J;
-        angularVelocity2 = (new Vector3(r2)).crs(angularVelocity2);
-        b2.angularVelocity = angularVelocity2.z * (1.0f/momentOfInertia2);
-        //rect2W = angularVelocity2.z * (1.0f/momentOfInertia2) * (float)(180.0f/Math.PI);
+        // Calculate the final linear velocities after the collision
+        Vector2 vf1 = new Vector2(impulseN).scl(1 / b1Mass).add(v1N);
+        Vector2 vf2 = new Vector2(impulseN).scl(-1 / b2Mass).add(v2N);
+                
+        b1.velocity = vf1;
+        b2.velocity = vf2;
+        
+        // Calculate the final angular velocities
+        float omegaDiff1 = (new Vector3(impulseN.x, impulseN.y, 0).crs(r1).z / b1.getMomentOfInertia()) + b1.angularVelocity;
+        float omegaDiff2 = (new Vector3(impulseN.x, impulseN.y, 0).crs(r2).z / b2.getMomentOfInertia()) + b2.angularVelocity;
+        
+        b1.angularVelocity += omegaDiff1;
+        b2.angularVelocity += omegaDiff2;
     }
     
     @Override

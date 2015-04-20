@@ -377,10 +377,11 @@ public class PhysicsRect extends RigidBody
         final float eToCoeff = (float)Math.pow(Math.E, -dragCoefficient * time/totalMass);
         velocity.x = 1/dragCoefficient * (force.x - eToCoeff * (force.x - dragCoefficient * velocity.x));
         velocity.y = 1/dragCoefficient * (force.y - eToCoeff * (force.y - dragCoefficient * velocity.y));
-        
+
         updateVertices();
     }
 
+    @Override
     public void setAngularVelocity(float vel)
     {
 //        float momentOfInertia = getMomentOfInertia();

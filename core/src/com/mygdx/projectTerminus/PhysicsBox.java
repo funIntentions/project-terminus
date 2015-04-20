@@ -84,23 +84,18 @@ public class PhysicsBox extends RigidBody {
     @Override
     public void update(float deltaTime)
     {
+        Vector2 position = getPosition();
         rotation += angularVelocity * deltaTime * (float)(180/Math.PI);
         position.x += velocity.x * deltaTime;
         position.y += velocity.y * deltaTime;
 
-//        System.out.println(deltaTime);
-//        System.out.println(velocity);
-//        System.out.println(position);
-
         updateVertices();
     }
 
-    /**
-     * Updates the box's vertex positions.
-     */
-    private void updateVertices()  
+    @Override
+    public void updateVertices()  
     {
-        
+        Vector2 position = getPosition();
         // Update all of the vertex positions based on the box's current position
         // and rotation
         for(int i = 0; i < vertices.length; i++)
@@ -134,7 +129,7 @@ public class PhysicsBox extends RigidBody {
     @Override
     public Vector2 getCentreOfMass()
     {
-        return position;
+        return getPosition();
     }
     
     @Override
@@ -146,6 +141,6 @@ public class PhysicsBox extends RigidBody {
 
     public void setAngularVelocity(float vel)
     {
-
+        
     }
 }

@@ -96,10 +96,34 @@ public class ProjectTerminus implements Screen
                 // collision
                 RigidBody affected = walls.contains(b1) ? b2 : b1;
                 RigidBody wall = affected == b1 ? b2 : b1;
-                if(doNarrowPhase(collPair, null, true))
+                CollisionInfo ci = new CollisionInfo();
+                if(doNarrowPhase(collPair, ci, false))
                 {
+                    // Determine if the body is moving in the same direction
+                    // as the collision normal; if so, we need to reverse it to
+                    // push in the right direction
+                    float dot = affected.velocity.dot(ci.normal);
+                    if(dot > 0)
+                    {
+                        ci.normal.scl(-1);
+                    }
+                    
+                    // Push the affected body out of the wall in the direction of
+                    // the collision normal
+                    ci.normal.scl(ci.depth);
+                    affected.position.add(ci.normal);
+                    affected.updateVertices();
+                    
+                    if(affected instanceof PhysicsRect)
+                    {
+                        for(PhysicsRect child : ((PhysicsRect)affected).childRects)
+                        {
+                            child.position.add(ci.normal);
+                        }
+                    }
+                    
                     // Could do the full check, but fuck that
-                    if(Math.abs(wall.position.x) > 10) affected.velocity.x *= -1;
+                    if(Math.abs(wall.getPosition().x) > 10) affected.velocity.x *= -1;
                     else affected.velocity.y *= -1;
                 }
                 continue;
@@ -107,7 +131,7 @@ public class ProjectTerminus implements Screen
             
             // Check if the two objects are actually colliding and respond appropriately if so
             CollisionInfo ci = new CollisionInfo();
-            if(doNarrowPhase(collPair, ci, false))
+            if(doNarrowPhase(collPair, ci, true))
             {
                 float elasticity = 0;
                 RigidBody b1 = collPair.getLeft();
@@ -132,6 +156,7 @@ public class ProjectTerminus implements Screen
 
                 // Apply the appropriate collision response
                 collide(elasticity, ci);
+                System.out.println("CollisionInfo: " + ci);
             }
         }
     }
@@ -152,7 +177,7 @@ public class ProjectTerminus implements Screen
             for(int b2Index = b1Index + 1; b2Index < rBodies.size(); b2Index++)
             {
                 RigidBody body2 = rBodies.get(b2Index);
-                double dist = body1.position.dst(body2.position);
+                double dist = body1.getPosition().dst(body2.getPosition());
                 if(dist < (body1.getBoundingCircleRadius() + body2.getBoundingCircleRadius()))
                 {
                     Pair<RigidBody, RigidBody> collPair = new Pair<RigidBody, RigidBody>(body1, body2);
@@ -170,15 +195,13 @@ public class ProjectTerminus implements Screen
      * Note that this currently only actually checks rectangles; the algorithm
      * could be used to check other polygons by removing the axis optimisation.
      * 
-     * @param bodies     The bodies that may be colliding (as identified during
-     *                   broadphase).
-     * @param ciOut      A CollisionInfo object to hold the collision information.
-     * @param detectOnly Whether the actually get the collision information or to
-     *                   only check that the objects collided.
+     * @param bodies             Two bodies that might be colliding.
+     * @param ciOut              A CollisionInfo object to hold the collision information.
+     * @param getCollisionPoints If this is false, only fills in the collision depth and normal.
      * 
      */
     private boolean doNarrowPhase(Pair<RigidBody, RigidBody> bodies, CollisionInfo ciOut,
-                                    boolean detectOnly)
+                                    boolean getCollisionPoints)
     {
         Vector2[] b1Vertices = bodies.getLeft().getVertices();
         Vector2[] b2Vertices = bodies.getRight().getVertices();
@@ -246,16 +269,16 @@ public class ProjectTerminus implements Screen
                 minAxisIdx = aIndex;
             }
         }
-
+        
         // If we didn't specify to only detect collisions, fill in the given
         // CollisionInfo object
-        if(!detectOnly)
+        if(getCollisionPoints)
         {
             // Flip the normal such that it always points from the first to the
             // second body in collision
-            Vector2 obj1To2 = new Vector2(bodies.getRight().position)
-                                         .sub(bodies.getLeft().position).nor();
-            if(obj1To2.dot(axes[minAxisIdx]) < 0)
+            Vector2 obj1To2 = new Vector2(bodies.getRight().getPosition())
+                                         .sub(bodies.getLeft().getPosition());
+            if(new Vector2(obj1To2).nor().dot(axes[minAxisIdx]) < 0)
                     axes[minAxisIdx].scl(-1);
 
             // Determine the referent and incident faces
@@ -271,12 +294,24 @@ public class ProjectTerminus implements Screen
             ArrayList<Vector2> collisionPoints = findCollisionPoints(axes[minAxisIdx],
                                                     bestEdge1, bestEdge2,
                                                     e1Max, e2Max);
-
-            ciOut.bodies = bodies;
+            // Out objects are rectangles; if the collision manifold is empty and there are
+            // no collision points in it, we've got an edge/edge collision, so add a point
+            // halfway between objects 1 and 2's centres
+            if(collisionPoints.isEmpty())
+            {
+                obj1To2.scl(0.5f);
+                obj1To2.add(bodies.getLeft().position);
+                collisionPoints.add(obj1To2);
+            }
+            
             ciOut.manifold = collisionPoints;
-            ciOut.depth = minTranslation;
-            ciOut.normal = axes[minAxisIdx];
         }
+        
+        // Fill in the information determined in the check regardless of whether
+        // we're getting the collision points.
+        ciOut.depth = minTranslation;
+        ciOut.normal = axes[minAxisIdx];
+        ciOut.bodies = bodies;
         return true;
     }
 
@@ -474,23 +509,44 @@ public class ProjectTerminus implements Screen
         RigidBody b1 = collisionInfo.bodies.getLeft();
         RigidBody b2 = collisionInfo.bodies.getRight();
         
+        // Separate the bodies
+        // The algorithm always ensures that the normal points from body 1 to 2
+        // We also add 5% to space them out a bit more
+        Vector2 body1Push = new Vector2(collisionInfo.normal).scl(-0.505f);
+        Vector2 body2Push = new Vector2(collisionInfo.normal).scl(0.505f);
+        
+        b1.position.add(body1Push);
+        b2.position.add(body2Push);
+        
+        b1.updateVertices();
+        b2.updateVertices();
+        
         Vector3 unitNormal = new Vector3(-collisionInfo.normal.x, -collisionInfo.normal.y, 0);
         float b1Mass = b1.mass;
         float b2Mass = b2.mass;
-
+        
+        // If we're dealing with the car, handle its child rectangles appropriately
         if (b1 instanceof PhysicsRect)
         {
             b1Mass = ((PhysicsRect)b1).getTotalMass();
+            for(PhysicsRect child : ((PhysicsRect)b1).childRects)
+            {
+                child.position.add(body1Push);
+            }
         }
         else if (b2 instanceof PhysicsRect)
         {
             b2Mass = ((PhysicsRect)b2).getTotalMass();
+            for(PhysicsRect child : ((PhysicsRect)b2).childRects)
+            {
+                child.position.add(body2Push);
+            }
         }
-
+        
         Vector2 P = collisionInfo.manifold.get(0);
 
-        Vector3 r1 = new Vector3((P.x - b1.position.x), (P.y - b1.position.y), 0);
-        Vector3 r2 = new Vector3((P.x - b2.position.x), (P.y - b2.position.y), 0);
+        Vector3 r1 = new Vector3((P.x - b1.getPosition().x), (P.y - b1.getPosition().y), 0);
+        Vector3 r2 = new Vector3((P.x - b2.getPosition().x), (P.y - b2.getPosition().y), 0);
 
         float momentOfInertia1 = b1.getMomentOfInertia();
         float momentOfInertia2 = b2.getMomentOfInertia();
@@ -499,7 +555,7 @@ public class ProjectTerminus implements Screen
         vR.x = b1.velocity.x - b2.velocity.x;
         vR.y = b1.velocity.y - b2.velocity.y;
 
-        // calculate impulse J
+        // Determine the variables for the impulse calculation
         Vector2 coefficient = new Vector2();
         coefficient.x = -vR.x * (elasticity + 1.0f);
         coefficient.y = -vR.y * (elasticity + 1.0f);
@@ -524,14 +580,19 @@ public class ProjectTerminus implements Screen
 
         float denominator = inverseMasses + componentOne + componentTwo;
 
+        // Calculate the impulse applied to the objects
         Vector2 J = new Vector2();
         J.x = coefficient.x * (1.0f/denominator);
         J.y = coefficient.y * (1.0f/denominator);
 
+        // Calculate the first object's final velocity after the impulse in the
+        // direction of the normal
         Vector2 Uf = new Vector2();
         Uf.x = -J.x/b1Mass + b1.velocity.x;
         Uf.y = -J.y/b1Mass + b1.velocity.y;
 
+        // Calculate the second object's velocity after the impulse in the
+        // direction of the normal
         Vector2 Vf = new Vector2();
         Vf.x = J.x/b2Mass + b2.velocity.x;
         Vf.y = J.y/b2Mass + b2.velocity.y;
@@ -541,6 +602,7 @@ public class ProjectTerminus implements Screen
         b2.velocity.x = Vf.x * unitNormal.x;
         b2.velocity.y = Vf.y * unitNormal.y;
 
+        // Calculate the first object's angular velocity after the collision
         Vector3 angularVelocity1 = new Vector3(unitNormal);
         angularVelocity1.x = angularVelocity1.x * -J.x;
         angularVelocity1.y = angularVelocity1.y * -J.y;
@@ -549,6 +611,7 @@ public class ProjectTerminus implements Screen
         b1.angularVelocity = angularVelocity1.z * (1.0f/momentOfInertia1);
         //rect1W = angularVelocity1.z * (1.0f/momentOfInertia1) * (float)(180.0f/Math.PI);
 
+        // Calculate the second object's angular velocity after the collision
         Vector3 angularVelocity2 = new Vector3(unitNormal);
         angularVelocity2.x = angularVelocity2.x * J.x;
         angularVelocity2.y = angularVelocity2.y * J.y;
@@ -586,25 +649,25 @@ public class ProjectTerminus implements Screen
 
         shapeRenderer.setColor(car.colour);
         shapeRenderer.identity();
-        shapeRenderer.translate(car.position.x, car.position.y, 0.f);
+        shapeRenderer.translate(car.getPosition().x, car.getPosition().y, 0.f);
         shapeRenderer.rotate(0, 0, 1, car.rotation);
         shapeRenderer.rect(-car.width / 2, -car.height / 2, car.width, car.height); // Car
         shapeRenderer.rotate(0, 0, 1, -car.rotation);
-        shapeRenderer.translate(-car.position.x, -car.position.y, 0.f);
+        shapeRenderer.translate(-car.getPosition().x, -car.getPosition().y, 0.f);
 
         shapeRenderer.setColor(driver.colour);
-        shapeRenderer.translate(driver.position.x, driver.position.y, 0.f);
+        shapeRenderer.translate(driver.getPosition().x, driver.getPosition().y, 0.f);
         shapeRenderer.rotate(0, 0, 1, driver.rotation);
         shapeRenderer.rect(-driver.width / 2, -driver.height / 2, driver.width, driver.height); // Driver
         shapeRenderer.rotate(0, 0, 1, -driver.rotation);
-        shapeRenderer.translate(-driver.position.x, -driver.position.y, 0.f);
+        shapeRenderer.translate(-driver.getPosition().x, -driver.getPosition().y, 0.f);
 
         shapeRenderer.setColor(tank.colour);
-        shapeRenderer.translate(tank.position.x, tank.position.y, 0.f);
+        shapeRenderer.translate(tank.getPosition().x, tank.getPosition().y, 0.f);
         shapeRenderer.rotate(0, 0, 1, tank.rotation);
         shapeRenderer.rect(-tank.width / 2, -tank.height / 2, tank.width, tank.height); // Driver
         shapeRenderer.rotate(0, 0, 1, -tank.rotation);
-        shapeRenderer.translate(-tank.position.x, -tank.position.y, 0.f);
+        shapeRenderer.translate(-tank.getPosition().x, -tank.getPosition().y, 0.f);
 
         shapeRenderer.setColor(COMcolour);
         shapeRenderer.circle(car.COM.x, car.COM.y, 4);
@@ -618,12 +681,12 @@ public class ProjectTerminus implements Screen
             if (body instanceof PhysicsBox)
             {
                 PhysicsBox box = (PhysicsBox)body;
-                shapeRenderer.translate(box.position.x, box.position.y, 0.f);
+                shapeRenderer.translate(box.getPosition().x, box.getPosition().y, 0.f);
                 shapeRenderer.rotate(0, 0, 1, box.rotation);
                 shapeRenderer.rect(-box.sideLen / 2, -box.sideLen / 2,
                         box.sideLen, box.sideLen);
                 shapeRenderer.rotate(0, 0, 1, -box.rotation);
-                shapeRenderer.translate(-box.position.x, -box.position.y, 0.f);
+                shapeRenderer.translate(-box.getPosition().x, -box.getPosition().y, 0.f);
                 String elasticity = "1";
                 if (!box.isElastic)
                 {
@@ -631,7 +694,7 @@ public class ProjectTerminus implements Screen
                 }
 
                 game.batch.begin();
-                game.font.draw(game.batch, elasticity, box.position.x, box.position.y);
+                game.font.draw(game.batch, elasticity, box.getPosition().x, box.getPosition().y);
                 game.batch.end();
             }
         }
@@ -701,9 +764,9 @@ public class ProjectTerminus implements Screen
         
         game.batch.begin();
 
-        game.font.drawMultiLine(game.batch, "Car Position: " + car.position + "\n" +
-                "Tank Position: " + tank.position + "\n" +
-                "Driver Position: " + driver.position + "\n\n" +
+        game.font.drawMultiLine(game.batch, "Car Position: " + car.getPosition() + "\n" +
+                "Tank Position: " + tank.getPosition() + "\n" +
+                "Driver Position: " + driver.getPosition() + "\n\n" +
                 "COM Position: " + car.COM + "\n\n" +
                 "Moment of Inertia: " + car.momentOfInertia + "\n" +
                 "Car + Tank + Driver = " + "( " + car.mass + ", " + tank.mass + ", " + driver.mass + " )" + "\n\n" +
@@ -715,7 +778,7 @@ public class ProjectTerminus implements Screen
                 "alpha: " + car.angularAccel + "\n" +
                 "Radial: " + car.radial + "\n", 100, Gdx.graphics.getHeight()/2.2f);
 
-        game.font.draw(game.batch, "I'm a car.", car.position.x, car.position.y);
+        game.font.draw(game.batch, "I'm a car.", car.getPosition().x, car.getPosition().y);
         game.batch.end();
 
         handleInput();

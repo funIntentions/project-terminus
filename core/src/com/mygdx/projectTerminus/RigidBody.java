@@ -56,6 +56,11 @@ public abstract class RigidBody {
     public abstract void update(float time);
     
     /**
+     * Update this object's vertex positions based on its current position. 
+     */
+    public abstract void updateVertices();
+    
+    /**
      * Gets the object's centre of mass.
      * @return The object's centre of mass.
      */
@@ -68,4 +73,22 @@ public abstract class RigidBody {
     public abstract float getMomentOfInertia();
 
     public abstract void setAngularVelocity(float vel);
+    
+    public Vector2 getPosition()
+    {
+        return position;
+    }
+    
+    /**
+     * Updates the position to the new position and updates the object's vertices.
+     * @param newPos
+     * @return 
+     */
+    public Vector2 setPosition(Vector2 newPos)
+    {
+        position = newPos;
+        updateVertices();
+        
+        return position;
+    }
 }

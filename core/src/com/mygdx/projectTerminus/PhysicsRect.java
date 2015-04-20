@@ -34,7 +34,7 @@ public class PhysicsRect extends RigidBody
     float linearAccel;
     float angularAccel;
     public float dragCoefficient = 250;
-    private Array<PhysicsRect> childRects;
+    public Array<PhysicsRect> childRects;
     private int currentForces;
     private double circleRadius;
     private final Vector2[] initialVerts;
@@ -397,7 +397,7 @@ public class PhysicsRect extends RigidBody
     /**
      * Updates the box's vertex positions.
      */
-    private void updateVertices()    
+    public void updateVertices()    
     {
         for(int i = 0; i < vertices.length; i++)
         {

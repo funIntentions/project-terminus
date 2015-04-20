@@ -730,7 +730,7 @@ public class ProjectTerminus implements Screen
         
         game.batch.begin();
 
-        game.font.drawMultiLine(game.batch, "Car Position: " + car.getPosition() + "\n" +
+        /*game.font.drawMultiLine(game.batch, "Car Position: " + car.getPosition() + "\n" +
                 "Tank Position: " + tank.getPosition() + "\n" +
                 "Driver Position: " + driver.getPosition() + "\n\n" +
                 "COM Position: " + car.COM + "\n\n" +
@@ -742,7 +742,7 @@ public class ProjectTerminus implements Screen
                 "theta: " +  (car.rotation * Math.PI/180) + "\n" +
                 "omega: " + car.angularVelocity + "\n" +
                 "alpha: " + car.angularAccel + "\n" +
-                "Radial: " + car.radial + "\n", 100, Gdx.graphics.getHeight()/2.2f);
+                "Radial: " + car.radial + "\n", 100, Gdx.graphics.getHeight()/2.2f);*/
 
         game.font.draw(game.batch, "I'm a car.", car.getPosition().x, car.getPosition().y);
         game.batch.end();

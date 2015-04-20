@@ -37,8 +37,6 @@ public class ProjectTerminus implements Screen
     private final Color COMcolour;
     private final Color arrowColour;
     private Vector2 arrowPosition;
-    private float time = 0;
-    private Boolean collided;
 
     public ProjectTerminus(Game game)
     {
@@ -58,8 +56,6 @@ public class ProjectTerminus implements Screen
         arrowColour = new Color(0.6f,0.6f,0f,1.0f);
 
         arrowPosition = new Vector2(0,0);
-
-        collided = false;
 
         car.addChild(driver);
         car.addChild(tank);
@@ -473,7 +469,7 @@ public class ProjectTerminus implements Screen
         RigidBody b1 = collisionInfo.bodies.getLeft();
         RigidBody b2 = collisionInfo.bodies.getRight();
         
-        Vector3 unitNormal = new Vector3(collisionInfo.normal.x, collisionInfo.normal.y, 0);
+        Vector3 unitNormal = new Vector3(-collisionInfo.normal.x, -collisionInfo.normal.y, 0);
         float b1Mass = b1.mass;
         float b2Mass = b2.mass;
 
@@ -528,12 +524,12 @@ public class ProjectTerminus implements Screen
         J.y = coefficient.y * (1.0f/denominator);
 
         Vector2 Uf = new Vector2();
-        Uf.x = J.x/b1Mass + b1.velocity.x;
-        Uf.y = J.y/b1Mass + b1.velocity.y;
+        Uf.x = -J.x/b1Mass + b1.velocity.x;
+        Uf.y = -J.y/b1Mass + b1.velocity.y;
 
         Vector2 Vf = new Vector2();
-        Vf.x = -J.x/b2Mass + b2.velocity.x;
-        Vf.y = -J.y/b2Mass + b2.velocity.y;
+        Vf.x = J.x/b2Mass + b2.velocity.x;
+        Vf.y = J.y/b2Mass + b2.velocity.y;
 
         b1.velocity.x = Uf.x * unitNormal.x;
         b1.velocity.y = Uf.y * unitNormal.y;
@@ -541,22 +537,20 @@ public class ProjectTerminus implements Screen
         b2.velocity.y = Vf.y * unitNormal.y;
 
         Vector3 angularVelocity1 = new Vector3(unitNormal);
-        angularVelocity1.x = angularVelocity1.x * J.x;
-        angularVelocity1.y = angularVelocity1.y * J.y;
+        angularVelocity1.x = angularVelocity1.x * -J.x;
+        angularVelocity1.y = angularVelocity1.y * -J.y;
         angularVelocity1.z = 0; //= angularVelocity1.z * J;
         angularVelocity1 = (new Vector3(r1)).crs(angularVelocity1);
-        //b1.angularVelocity = angularVelocity1.z;
+        b1.angularVelocity = angularVelocity1.z * (1.0f/momentOfInertia1);
         //rect1W = angularVelocity1.z * (1.0f/momentOfInertia1) * (float)(180.0f/Math.PI);
 
         Vector3 angularVelocity2 = new Vector3(unitNormal);
-        angularVelocity2.x = angularVelocity2.x * -J.x;
-        angularVelocity2.y = angularVelocity2.y * -J.y;
+        angularVelocity2.x = angularVelocity2.x * J.x;
+        angularVelocity2.y = angularVelocity2.y * J.y;
         angularVelocity2.z = 0;//angularVelocity2.z * -J;
         angularVelocity2 = (new Vector3(r2)).crs(angularVelocity2);
-        //b2.angularVelocity = angularVelocity2.z; 1/dragCoefficient * (angularForce - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (angularForce - dragCoefficient * angularVelocity));
+        b2.angularVelocity = angularVelocity2.z * (1.0f/momentOfInertia2);
         //rect2W = angularVelocity2.z * (1.0f/momentOfInertia2) * (float)(180.0f/Math.PI);
-
-        collided = true;
     }
     
     @Override
@@ -565,7 +559,11 @@ public class ProjectTerminus implements Screen
         Gdx.gl.glClearColor( 0.2f,  0.2f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        car.update(deltaTime);
+        for (RigidBody body : bodies)
+        {
+            body.update(deltaTime);
+        }
+
         handleCollisions();
         arrowPosition = car.forcePosition;
 
@@ -703,7 +701,6 @@ public class ProjectTerminus implements Screen
                 "Moment of Inertia: " + car.momentOfInertia + "\n" +
                 "Car + Tank + Driver = " + "( " + car.mass + ", " + tank.mass + ", " + driver.mass + " )" + "\n\n" +
                 "Force: " + car.force + "\n" +
-                "Time: " + time + "\n" +
                 "v: " + car.velocity + "\n" +
                 "a: " + car.linearAccel + "\n" +
                 "theta: " +  (car.rotation * Math.PI/180) + "\n" +
@@ -791,7 +788,6 @@ public class ProjectTerminus implements Screen
             car.reset(-300, 0, 200, 100, new Color(0.5f,0.5f,0.5f,1f), 1000, 0);
             driver.reset(-240, 20, 40, 40, new Color(0.5f, 0f, 0f, 1f), 0, 0);
             tank.reset(-380, 0, 40, 80, new Color(0f, 0.5f, 0f, 1f), 0, 0);
-            time = 0;
         }
     }
 

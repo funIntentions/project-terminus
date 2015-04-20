@@ -539,7 +539,7 @@ public class ProjectTerminus implements Screen
         angularVelocity1.y = angularVelocity1.y * J.y;
         angularVelocity1.z = 0; //= angularVelocity1.z * J;
         angularVelocity1 = (new Vector3(r1)).crs(angularVelocity1);
-        //b1.angularVelocity = angularVelocity1.z;
+        b1.angularVelocity = angularVelocity1.z * (1.0f/momentOfInertia1);
         //rect1W = angularVelocity1.z * (1.0f/momentOfInertia1) * (float)(180.0f/Math.PI);
 
         Vector3 angularVelocity2 = new Vector3(unitNormal);
@@ -547,7 +547,7 @@ public class ProjectTerminus implements Screen
         angularVelocity2.y = angularVelocity2.y * -J.y;
         angularVelocity2.z = 0;//angularVelocity2.z * -J;
         angularVelocity2 = (new Vector3(r2)).crs(angularVelocity2);
-        //b2.angularVelocity = angularVelocity2.z; 1/dragCoefficient * (angularForce - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (angularForce - dragCoefficient * angularVelocity));
+        b2.angularVelocity = angularVelocity2.z * time * (1.0f/momentOfInertia2);
         //rect2W = angularVelocity2.z * (1.0f/momentOfInertia2) * (float)(180.0f/Math.PI);
 
         collided = true;

@@ -382,6 +382,19 @@ public class PhysicsRect extends RigidBody
         
         updateVertices();
     }
+
+    public void setAngularVelocity(float vel)
+    {
+//        float momentOfInertia = getMomentOfInertia();
+//        this.momentOfInertia = momentOfInertia;
+//
+//        float angularAcceleration = determineAngularAcceleration(momentOfInertia);
+//
+//        // Determine Angular Velocity
+//        float angularForce = (angularAcceleration * totalMass);
+//
+//        angularVelocity = 1/dragCoefficient * (angularForce - (float)Math.pow(Math.E, -dragCoefficient * time/totalMass) * (angularForce - dragCoefficient * angularVelocity));
+    }
     
     /**
      * Updates the box's vertex positions.

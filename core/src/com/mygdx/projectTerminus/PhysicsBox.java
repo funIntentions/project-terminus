@@ -139,4 +139,9 @@ public class PhysicsBox extends RigidBody {
         return (float)((this.mass * (Math.pow(sideLen, 2) + Math.pow(sideLen, 2)))
                 / 12);
     }
+
+    public void setAngularVelocity(float vel)
+    {
+
+    }
 }

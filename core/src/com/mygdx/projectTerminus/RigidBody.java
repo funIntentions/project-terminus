@@ -66,4 +66,6 @@ public abstract class RigidBody {
      * @return The object's moment of inertia.
      */
     public abstract float getMomentOfInertia();
+
+    public abstract void setAngularVelocity(float vel);
 }

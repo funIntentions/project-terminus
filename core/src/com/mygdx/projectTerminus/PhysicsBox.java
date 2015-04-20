@@ -84,10 +84,14 @@ public class PhysicsBox extends RigidBody {
     @Override
     public void update(float deltaTime)
     {
-        rotation += angularVelocity * deltaTime;
+        rotation += angularVelocity * deltaTime * (float)(180/Math.PI);
         position.x += velocity.x * deltaTime;
         position.y += velocity.y * deltaTime;
-        
+
+        System.out.println(deltaTime);
+        System.out.println(velocity);
+        System.out.println(position);
+
         updateVertices();
     }
 
